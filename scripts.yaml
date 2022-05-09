@@ -1,0 +1,964 @@
+play_music:
+  alias: Play Music
+  sequence:
+  - service: media_player.volume_set
+    data:
+      volume_level: 0.35
+    target:
+      entity_id: media_player.living_room_echo_dot
+      device_id: 6f50899d4d9562a62ceae95d3e279195
+  - service: media_player.volume_set
+    data:
+      volume_level: 0.3
+    target:
+      entity_id:
+      - media_player.echo_show
+  - service: media_player.volume_set
+    data:
+      volume_level: 0.16
+    target:
+      entity_id:
+      - media_player.balcony_echo_dot
+  - service: media_player.play_media
+    target:
+      entity_id: media_player.living_room_echo_dot
+    data_template:
+      entity_id: media_player.living_room_echo_dot
+      media_content_id: play {{ states('input_text.alexa_sound_notification') }} on
+        the main group
+      media_content_type: custom
+  mode: single
+  icon: mdi:music
+play_smooth_jazz:
+  sequence:
+  - service: input_text.set_value
+    data:
+      value: Smooth Jazz
+    target:
+      entity_id: input_text.alexa_sound_notification
+  - service: script.play_music
+    data: {}
+  mode: single
+  alias: Play Smooth Jazz
+  icon: mdi:saxophone
+play_lovers_rock:
+  alias: Play Lovers Rock
+  sequence:
+  - service: input_text.set_value
+    data:
+      value: Reggae
+    target:
+      entity_id: input_text.alexa_sound_notification
+  - service: script.play_music
+    data: {}
+  mode: single
+play_oldies:
+  alias: Play Oldies
+  sequence:
+  - service: input_text.set_value
+    data:
+      value: Oldies
+    target:
+      entity_id: input_text.alexa_sound_notification
+  - service: script.play_music
+    data: {}
+  mode: single
+play_classic_rock:
+  alias: Play Classic Rock
+  sequence:
+  - service: input_text.set_value
+    data:
+      value: Classic Rock
+    target:
+      entity_id: input_text.alexa_sound_notification
+  - service: script.play_music
+    data: {}
+  mode: single
+  icon: mdi:guitar-electric
+good_night:
+  alias: Good Night
+  sequence:
+  - type: turn_off
+    device_id: 111c6f67b5f5588def3e36ac3cf07bcd
+    entity_id: light.front_door_light
+    domain: light
+  mode: single
+fire_tv_power:
+  alias: Fire TV Power
+  sequence:
+  - service: androidtv.adb_command
+    data:
+      command: POWER
+    target:
+      entity_id: media_player.fire_tv_192_168_0_166
+  mode: single
+party_lights:
+  alias: Party Lights
+  mode: single
+  fields:
+    entity:
+      description: The entity that will be rainbowed
+      example: light.bathroom
+  sequence:
+    service: light.turn_on
+    data_template:
+      entity_id: '{{ entity }}'
+      rgb_color:
+      - '{{ (range(0, 255)|random) }}'
+      - '{{ (range(0, 255)|random) }}'
+      - '{{ (range(0, 255)|random) }}'
+event_tomorrow:
+  sequence:
+  - condition: and
+    conditions:
+    - condition: state
+      state: 'True'
+      entity_id: sensor.event_tomorrow
+    - condition: time
+      after: '16:00:00'
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: Don't forget, tomorrow '{{states.calendar.building4unit906_gmail_com.attributes.message}}'
+        at '{{as_timestamp (states.calendar.building4unit906_gmail_com.attributes.start_time
+        ) | timestamp_custom('%-I %-M %p') }} '
+      data:
+        type: announce
+        method: all
+  mode: single
+  alias: Event Tomorrow
+mail_in_mailbox:
+  sequence:
+  - condition: numeric_state
+    entity_id: counter.mail_amount
+    above: '0'
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: There are {{ states("counter.mail_amount") }} pieces of mail in the
+        mailbox
+      data:
+        type: announce
+        method: all
+  mode: single
+  alias: Mail in Mailbox
+event_today_master:
+  alias: Event Today (Master)
+  sequence:
+  - condition: state
+    entity_id: sensor.event_today
+    state: 'True'
+  - service: notify.alexa_media_master_echo_dot
+    data:
+      message: Don't forget, today '{{states.calendar.building4unit906_gmail_com.attributes.message}}'
+        at '{{as_timestamp (states.calendar.building4unit906_gmail_com.attributes.start_time
+        ) | timestamp_custom('%-I %-M %p') }} '
+      data:
+        type: announce
+        method: all
+  mode: single
+event_today_living_room:
+  alias: 'Event Today (Living Room) '
+  sequence:
+  - condition: and
+    conditions:
+    - condition: state
+      entity_id: sensor.event_today
+      state: 'True'
+    - condition: time
+      before: '16:01:00'
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: Don't forget, today '{{states.calendar.building4unit906_gmail_com.attributes.message}}'
+        at '{{as_timestamp (states.calendar.building4unit906_gmail_com.attributes.start_time
+        ) | timestamp_custom('%-I %-M %p') }} '
+      data:
+        type: announce
+        method: all
+  mode: single
+event_today_kitchen:
+  alias: Event Today (Kitchen)
+  sequence:
+  - condition: state
+    entity_id: sensor.event_today
+    state: 'True'
+  - service: notify.alexa_media_echo_show
+    data:
+      message: Don't forget, today '{{states.calendar.building4unit906_gmail_com.attributes.message}}'
+        at '{{as_timestamp (states.calendar.building4unit906_gmail_com.attributes.start_time
+        ) | timestamp_custom('%-I %-M %p') }} '
+      data:
+        type: announce
+        method: all
+  mode: single
+kitchen_light_save_state:
+  sequence:
+  - condition: and
+    conditions:
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: light.cabinet_lights_left
+        state: 'off'
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: light.cabinet_lights_right
+        state: 'off'
+  - service: scene.create
+    data:
+      scene_id: cabinetlights
+      snapshot_entities:
+      - light.cabinet_lights_left
+  - service: scene.create
+    data:
+      scene_id: cabinetlights2
+      snapshot_entities:
+      - light.cabinet_lights_right
+  mode: single
+  alias: Kitchen Light Save State
+event_this_week:
+  alias: Event This Week
+  sequence:
+  - condition: state
+    entity_id: sensor.event_this_week
+    state: 'True'
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: Don't forget, this week on   '{{as_timestamp(states.calendar.building4unit906_gmail_com.attributes.start_time
+        ) |timestamp_custom("%A") }} ' '{{states.calendar.building4unit906_gmail_com.attributes.message}}'
+        at '{{as_timestamp(states.calendar.building4unit906_gmail_com.attributes.start_time
+        ) |timestamp_custom("%-I %M %p") }} '
+      data:
+        type: announce
+        method: all
+  mode: single
+some_light:
+  alias: Some Light
+  sequence:
+  - condition: and
+    conditions:
+    - condition: numeric_state
+      entity_id: sensor.ip_webcam_light_level
+      above: '12'
+      below: '22'
+    - condition: sun
+      after: sunrise
+  - type: turn_on
+    device_id: 111c6f67b5f5588def3e36ac3cf07bcd
+    entity_id: light.front_door_light
+    domain: light
+    brightness_pct: 65
+  - type: turn_off
+    device_id: dca3c2b2055bc70aa6ac1bc915003af4
+    entity_id: light.curio
+    domain: light
+  - type: turn_on
+    device_id: e06cd9d5167143aed441bfdad84c2236
+    entity_id: switch.couch_light
+    domain: switch
+  mode: single
+no_light:
+  alias: No Light
+  sequence:
+  - condition: and
+    conditions:
+    - condition: numeric_state
+      entity_id: sensor.ip_webcam_light_level
+      below: '13'
+    - condition: sun
+      after: sunrise
+  - service: light.turn_on
+    data:
+      brightness_pct: 65
+      xy_color:
+      - 0.554
+      - 0.389
+    target:
+      entity_id: light.curio
+      device_id: dca3c2b2055bc70aa6ac1bc915003af4
+  - type: turn_on
+    device_id: 111c6f67b5f5588def3e36ac3cf07bcd
+    entity_id: light.front_door_light
+    domain: light
+    brightness_pct: 65
+  - type: turn_on
+    device_id: e06cd9d5167143aed441bfdad84c2236
+    entity_id: switch.couch_light
+    domain: switch
+  mode: single
+more_light:
+  alias: More Light
+  sequence:
+  - condition: and
+    conditions:
+    - condition: numeric_state
+      entity_id: sensor.ip_webcam_light_level
+      above: '21'
+      below: '26'
+    - condition: sun
+      after: sunrise
+  - type: turn_on
+    device_id: 111c6f67b5f5588def3e36ac3cf07bcd
+    entity_id: light.front_door_light
+    domain: light
+    brightness_pct: 65
+  - type: turn_off
+    device_id: dca3c2b2055bc70aa6ac1bc915003af4
+    entity_id: light.curio
+    domain: light
+  - type: turn_off
+    device_id: e06cd9d5167143aed441bfdad84c2236
+    entity_id: switch.couch_light
+    domain: switch
+  mode: single
+lots_of_light:
+  alias: Lot's of Light
+  sequence:
+  - condition: and
+    conditions:
+    - condition: numeric_state
+      entity_id: sensor.ip_webcam_light_level
+      above: '25'
+    - condition: sun
+      after: sunrise
+  - type: turn_off
+    device_id: 111c6f67b5f5588def3e36ac3cf07bcd
+    entity_id: light.front_door_light
+    domain: light
+  - type: turn_off
+    device_id: dca3c2b2055bc70aa6ac1bc915003af4
+    entity_id: light.curio
+    domain: light
+  - type: turn_off
+    device_id: e06cd9d5167143aed441bfdad84c2236
+    entity_id: switch.couch_light
+    domain: switch
+  mode: single
+auto_lights:
+  alias: Auto Lights
+  sequence:
+  - service: script.lots_of_light
+    data: {}
+  - service: script.more_light
+    data: {}
+  - service: script.some_light
+    data: {}
+  - service: script.no_light
+    data: {}
+  mode: single
+its_cold_outside:
+  sequence:
+  - condition: numeric_state
+    entity_id: weather.home
+    attribute: temperature
+    below: '60'
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: It's cold outside, close the windows. I am turning the heat on.
+      data:
+        type: announce
+        method: all
+  - service: notify.alexa_media_balcony_echo_dot
+    data:
+      message: It's cold outside, close the windows. I am turning the heat on.
+      data:
+        type: announce
+        method: all
+  - service: notify.alexa_media_master_echo_dot
+    data:
+      message: It's cold outside, close the windows. I am turning the heat on.
+      data:
+        type: announce
+        method: all
+  - service: notify.alexa_media_echo_show
+    data:
+      message: It's cold outside, close the windows. I am turning the heat on.
+      data:
+        type: announce
+        method: all
+  - service: tts.google_translate_say
+    data:
+      entity_id: media_player.bedroom_speaker
+      message: It's cold outside, close the windows. I am turning the heat on.
+  - device_id: 639ccaf341593b7b43a0f82a72fd7905
+    domain: climate
+    entity_id: climate.thermostat
+    type: set_hvac_mode
+    hvac_mode: heat
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 10
+      milliseconds: 0
+  - service: climate.set_temperature
+    data:
+      temperature: 70
+    target:
+      entity_id: climate.thermostat
+  mode: single
+  alias: It's Cold Outside
+its_hot_outside:
+  alias: It's Hot Outside
+  sequence:
+  - condition: numeric_state
+    entity_id: weather.home
+    attribute: temperature
+    above: '85'
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: It's hot outside, close the windows. I am turning the air condition
+        on.
+      data:
+        type: announce
+        method: all
+  - service: notify.alexa_media_balcony_echo_dot
+    data:
+      message: It's hot outside, close the windows. I am turning the air condition
+        on.
+      data:
+        type: announce
+        method: all
+  - service: notify.alexa_media_master_echo_dot
+    data:
+      message: It's hot outside, close the windows. I am turning the air condition
+        on.
+      data:
+        type: announce
+        method: all
+  - service: notify.alexa_media_echo_show
+    data:
+      message: It's hot outside, close the windows. I am turning the air condition
+        on.
+      data:
+        type: announce
+        method: all
+  - service: tts.google_translate_say
+    data:
+      entity_id: media_player.bedroom_speaker
+      message: It's hot outside, close the windows. I am turning the air condition
+        on.
+  - device_id: 639ccaf341593b7b43a0f82a72fd7905
+    domain: climate
+    entity_id: climate.thermostat
+    type: set_hvac_mode
+    hvac_mode: cool
+  - service: climate.set_temperature
+    data:
+      temperature: 75
+    target:
+      entity_id: climate.thermostat
+  mode: single
+its_nice_outside:
+  alias: 'It''s Nice Outside '
+  sequence:
+  - condition: and
+    conditions:
+    - condition: numeric_state
+      entity_id: sensor.weather_temperature
+      above: '60'
+      below: '85'
+    - condition: state
+      entity_id: input_boolean.high_pollen
+      state: 'off'
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: It's nice outside, open the windows. I am turning the thermostat off.
+      data:
+        type: announce
+        method: all
+  - service: notify.alexa_media_balcony_echo_dot
+    data:
+      message: It's nice outside, open the windows. I am turning the thermostat off.
+      data:
+        type: announce
+        method: all
+  - service: notify.alexa_media_master_echo_dot
+    data:
+      message: It's nice outside, open the windows. I am turning the thermostat off.
+      data:
+        type: announce
+        method: all
+  - service: notify.alexa_media_echo_show
+    data:
+      message: It's nice outside, open the windows. I am turning the thermostat off.
+      data:
+        type: announce
+        method: all
+  - service: tts.google_translate_say
+    data:
+      entity_id: media_player.bedroom_speaker
+      message: It's nice outside, open the windows. I am turning the thermostat off.
+  - device_id: 639ccaf341593b7b43a0f82a72fd7905
+    domain: climate
+    entity_id: climate.thermostat
+    type: set_hvac_mode
+    hvac_mode: 'off'
+  mode: single
+auto_thermostat:
+  alias: Auto Thermostat
+  sequence:
+  - service: media_player.volume_set
+    data:
+      volume_level: 0.5
+    target:
+      device_id:
+      - 6f50899d4d9562a62ceae95d3e279195
+      - 277dc0c8ee0cad6310d111ccadbec363
+      - 1ef021f155fd24d432d177b3b2572feb
+      - eb39c92c2d694e69f73f0c7198d399e3
+      entity_id:
+      - media_player.living_room_echo_dot
+      - media_player.balcony_echo_dot
+      - media_player.bedroom_speaker
+      - media_player.master_echo_dot
+  - service: script.its_cold_outside
+    data: {}
+  - service: script.its_nice_outside
+    data: {}
+  - service: script.its_nice_outside_high_pollen
+    data: {}
+  - service: script.its_hot_outside
+    data: {}
+  mode: single
+cold_night:
+  alias: Cold Night
+  sequence:
+  - condition: numeric_state
+    entity_id: input_number.night_temp
+    below: '50'
+  - device_id: 639ccaf341593b7b43a0f82a72fd7905
+    domain: climate
+    entity_id: climate.thermostat
+    type: set_hvac_mode
+    hvac_mode: heat
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: It is going to be cold tonight with a low of {{ states("input_number.night_temp")
+        }} degrees, I am setting the heat to 65.
+      data:
+        type: announce
+        method: all
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 10
+      milliseconds: 0
+  - service: climate.set_temperature
+    data:
+      temperature: 65
+    target:
+      entity_id: climate.thermostat
+  mode: single
+hot_night:
+  alias: 'Hot Night '
+  sequence:
+  - condition: and
+    conditions:
+    - condition: numeric_state
+      entity_id: input_number.night_temp
+      above: '50'
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: It is going to be hot tonight with a low of {{ states("input_number.night_temp")
+        }} degrees, I am setting the AC to 72.
+      data:
+        type: announce
+        method: all
+  - device_id: 639ccaf341593b7b43a0f82a72fd7905
+    domain: climate
+    entity_id: climate.thermostat
+    type: set_hvac_mode
+    hvac_mode: cool
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 10
+      milliseconds: 0
+  - service: climate.set_temperature
+    data:
+      temperature: 70
+    target:
+      entity_id: climate.thermostat
+  - wait_for_trigger:
+    - platform: numeric_state
+      entity_id: climate.thermostat
+      attribute: current_temperature
+      below: '71'
+  - service: climate.set_hvac_mode
+    data:
+      hvac_mode: heat_cool
+    target:
+      entity_id: climate.thermostat
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 10
+      milliseconds: 0
+  - service: climate.set_temperature
+    data:
+      target_temp_high: 72
+      target_temp_low: 65
+    target:
+      entity_id: climate.thermostat
+  mode: single
+auto_night_thermostat:
+  alias: 'Auto Night Thermostat '
+  sequence:
+  - service: script.cold_night
+    data: {}
+  - service: script.hot_night
+    data: {}
+  mode: single
+clean_main:
+  alias: Clean Main
+  sequence:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: vacuum.valetudo_vacuum
+      state: cleaning
+    - condition: template
+      value_template: '"{{ ( as_timestamp(now()) - as_timestamp(state_attr(''script.clean_main'',
+        ''last_triggered'')) |int(0) ) > 180 }}"
+
+        '
+    - condition: not
+      conditions:
+      - condition: time
+        before: '17:00:00'
+  - service: automation.trigger
+    data: {}
+    target:
+      entity_id: automation.clean_living_room
+  - wait_for_trigger:
+    - platform: state
+      entity_id: vacuum.valetudo_vacuum
+      to: returning
+  - service: automation.trigger
+    data: {}
+    target:
+      entity_id: automation.clean_dining_room
+  - wait_for_trigger:
+    - platform: state
+      entity_id: vacuum.valetudo_vacuum
+      to: returning
+  - service: automation.trigger
+    data: {}
+    target:
+      entity_id: automation.clean_kitchen
+  - wait_for_trigger:
+    - platform: state
+      entity_id: vacuum.valetudo_vacuum
+      to: returning
+  - service: automation.trigger
+    data: {}
+    target:
+      entity_id: automation.clean_living_hallway
+  mode: single
+fan_off:
+  alias: Fan Off
+  sequence:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: fan.balcony_fan
+      state: unavailable
+  - service: fan.turn_off
+    data: {}
+    target:
+      entity_id: fan.balcony_fan
+  mode: single
+fan_idle:
+  sequence:
+  - condition: numeric_state
+    entity_id: weather.home
+    attribute: temperature
+    above: '60'
+  - service: fan.turn_on
+    data:
+      percentage: 1
+    target:
+      entity_id: fan.balcony_fan
+  mode: single
+  alias: Fan Idle
+its_nice_outside_high_pollen:
+  alias: It's Nice Outside High Pollen
+  sequence:
+  - condition: and
+    conditions:
+    - condition: numeric_state
+      entity_id: sensor.weather_temperature
+      above: '60'
+      below: '85'
+    - condition: state
+      entity_id: input_boolean.high_pollen
+      state: 'on'
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: It's nice outside but the allergies are bad so I am setting the AC
+        to 76. Make sure the windows are closed
+      data:
+        type: announce
+        method: all
+  - service: notify.alexa_media_balcony_echo_dot
+    data:
+      message: It's nice outside but the allergies are bad so I am setting the AC
+        to 76. Make sure the windows are closed
+      data:
+        type: announce
+        method: all
+  - service: notify.alexa_media_master_echo_dot
+    data:
+      message: It's nice outside but the allergies are bad so I am setting the AC
+        to 76. Make sure the windows are closed
+      data:
+        type: announce
+        method: all
+  - service: notify.alexa_media_echo_show
+    data:
+      message: It's nice outside but the allergies are bad so I am setting the AC
+        to 76. Make sure the windows are closed
+      data:
+        type: announce
+        method: all
+  - service: tts.google_translate_say
+    data:
+      entity_id: media_player.bedroom_speaker
+      message: It's nice outside but the allergies are bad so I am setting the AC
+        to 76. Make sure the windows are closed
+  - device_id: 639ccaf341593b7b43a0f82a72fd7905
+    domain: climate
+    entity_id: climate.thermostat
+    type: set_hvac_mode
+    hvac_mode: cool
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 10
+      milliseconds: 0
+  - service: climate.set_temperature
+    data:
+      temperature: 76
+    target:
+      entity_id: climate.thermostat
+  mode: single
+open_right_blinds:
+  sequence:
+  - condition: or
+    conditions:
+    - condition: numeric_state
+      entity_id: sun.sun
+      attribute: elevation
+      above: '85'
+    - condition: numeric_state
+      entity_id: sun.sun
+      attribute: azimuth
+      above: '185'
+  - condition: sun
+    before: sunset
+    before_offset: '360'
+  - service: cover.open_cover
+    data: {}
+    target:
+      entity_id: cover.blinds_controller_curtain
+  mode: single
+  alias: Open Right Blinds
+auto_blinds:
+  sequence:
+  - condition: state
+    entity_id: input_boolean.present
+    state: 'on'
+  - service: script.open_center_blinds
+    data: {}
+  - service: script.open_left_blinds
+    data: {}
+  - service: script.open_right_blinds
+    data: {}
+  mode: single
+  alias: Auto Open Blinds
+close_blinds:
+  sequence:
+  - service: cover.close_cover
+    data: {}
+    target:
+      entity_id:
+      - cover.blinds_controller_curtain
+      - cover.center_blinds_left_curtain
+      - cover.center_blinds_right_curtain
+      - cover.left_blinds_curtain
+  mode: single
+  alias: Close Blinds
+open_center_blinds:
+  alias: Open Center Blinds
+  sequence:
+  - condition: or
+    conditions:
+    - condition: numeric_state
+      entity_id: sun.sun
+      attribute: elevation
+      above: '85'
+    - condition: numeric_state
+      entity_id: sun.sun
+      attribute: azimuth
+      above: '150'
+  - condition: sun
+    before: sunset
+    before_offset: '360'
+  - service: cover.open_cover
+    data: {}
+    target:
+      entity_id:
+      - cover.center_blinds_left_curtain
+      - cover.center_blinds_right_curtain
+  mode: single
+open_left_blinds:
+  alias: Open Left Blinds
+  sequence:
+  - condition: or
+    conditions:
+    - condition: numeric_state
+      entity_id: sun.sun
+      attribute: elevation
+      above: '85'
+    - condition: numeric_state
+      entity_id: sun.sun
+      attribute: azimuth
+      above: '100'
+  - condition: sun
+    before: sunset
+    before_offset: '360'
+  - service: cover.open_cover
+    data: {}
+    target:
+      entity_id: cover.left_blinds_curtain
+  mode: single
+clean_dinner:
+  alias: Clean Dinner
+  sequence:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: vacuum.valetudo_vacuum
+      state: cleaning
+    - condition: template
+      value_template: '"{{ ( as_timestamp(now()) - as_timestamp(state_attr(''script.clean_main'',
+        ''last_triggered'')) |int(0) ) > 180 }}"
+
+        '
+    - condition: not
+      conditions:
+      - condition: time
+        after: '17:00:00'
+  - service: automation.trigger
+    data: {}
+    target:
+      entity_id: automation.clean_dining_room
+  - wait_for_trigger:
+    - platform: state
+      entity_id: vacuum.valetudo_vacuum
+      to: returning
+  - service: automation.trigger
+    data: {}
+    target:
+      entity_id: automation.clean_kitchen
+  - wait_for_trigger:
+    - platform: state
+      entity_id: vacuum.valetudo_vacuum
+      to: returning
+  - service: automation.trigger
+    data: {}
+    target:
+      entity_id: automation.clean_living_hallway
+  mode: single
+close_left_blinds:
+  alias: Close Left Blinds (Weekend)
+  sequence:
+  - condition: and
+    conditions:
+    - condition: numeric_state
+      entity_id: sun.sun
+      attribute: elevation
+      below: '85'
+    - condition: numeric_state
+      entity_id: sun.sun
+      attribute: azimuth
+      below: '100'
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: weather.home
+        state: sunny
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: weather.home
+        state: partlycloudy
+    - condition: sun
+      before: sunset
+      before_offset: '360'
+  - service: cover.close_cover
+    data: {}
+    target:
+      entity_id: cover.left_blinds_curtain
+  mode: single
+close_center_blinds:
+  alias: Close Center Blinds (Weekend)
+  sequence:
+  - condition: and
+    conditions:
+    - condition: numeric_state
+      entity_id: sun.sun
+      attribute: elevation
+      below: '85'
+    - condition: numeric_state
+      entity_id: sun.sun
+      attribute: azimuth
+      below: '120'
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: weather.home
+        state: sunny
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: weather.home
+        state: partlycloudy
+    - condition: sun
+      before: sunset
+      before_offset: '360'
+  - service: cover.close_cover
+    data: {}
+    target:
+      entity_id:
+      - cover.center_blinds_left_curtain
+      - cover.center_blinds_right_curtain
+  mode: single
+close_right_blinds:
+  alias: Close Right Blinds (Weekend)
+  sequence:
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: weather.home
+      state: sunny
+    - condition: state
+      entity_id: weather.home
+      state: partlycloudy
+  - condition: sun
+    before: sunset
+    before_offset: '360'
+  - service: cover.close_cover
+    data: {}
+    target:
+      entity_id: cover.blinds_controller_curtain
+  mode: single
+auto_close_blinds:
+  alias: Auto Close Blinds
+  sequence:
+  - service: script.close_left_blinds
+    data: {}
+  - service: script.close_center_blinds
+    data: {}
+  - service: script.close_right_blinds
+    data: {}
+  mode: single

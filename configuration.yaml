@@ -1,0 +1,193 @@
+
+# Configure a default setup of Home Assistant (frontend, api, etc)
+default_config:
+
+# Text to speech
+tts:
+  - platform: google_translate
+
+group: !include groups.yaml
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+# Nest Integration
+nest:
+  client_id: !secret nest_client_id
+  client_secret: !secret nest_client_secret
+  # "Project ID" in the Device Access Console (not Cloud Project ID!)
+  project_id: !secret nest_project_id
+  
+# Google Calendar
+google:
+  client_id: !secret calendar_client_id
+  client_secret: !secret calendar_client_secret
+  
+# Amazon Account
+alexa_media:
+  accounts:
+   email: !secret amazon_email
+   password: !secret amazon_password
+   url: amazon.com
+   
+# Opensky (Flight Tracker)
+sensor:
+  - platform: opensky
+    radius: 5
+# Thermostat
+  - platform: template
+    sensors:
+      goal_temp:
+        value_template: '{{ state_attr("climate.thermostat","temperature")|int }}'
+# Temperature
+  - platform: template
+    sensors:
+      weather_temperature:
+        friendly_name: "Temp"
+        unit_of_measurement: 'degrees'
+        value_template: "{{ state_attr('weather.home', 'temperature') }}"
+# Sunrise/Sunset
+  - platform: template
+    sensors:
+      nextsunrise:
+        entity_id: sun.sun
+        friendly_name: 'Next Sunrise'
+        value_template: >
+          {{ as_timestamp(states.sun.sun.attributes.next_rising) | timestamp_custom(' %I:%M %p') | replace(" 0", "") }}
+        icon_template: mdi:weather-sunset-up
+      nextsunset:
+        entity_id: sun.sun
+        friendly_name: 'Next Sunset'
+        value_template: >
+          {{ as_timestamp(states.sun.sun.attributes.next_setting) | timestamp_custom(' %I:%M %p') | replace(" 0", "") }}
+        icon_template: mdi:weather-sunset-down 
+# Event Tomorrow
+  - platform: template
+    sensors:
+      event_tomorrow:
+        entity_id:
+          - calendar.building4unit906_gmail_com
+          - sensor.time
+        friendly_name: "Event Tomorrow"
+        value_template: >
+          {% set e = strptime(
+               states.calendar.building4unit906_gmail_com.attributes.start_time,
+               '%Y-%m-%d %H:%M:%S') %}
+          {{ e.strftime('%j')|int - now().strftime('%j')|int == 1 }}
+# Event Today
+  - platform: template
+    sensors:
+      event_today:
+        entity_id:
+          - calendar.building4unit906_gmail_com
+          - sensor.time
+        friendly_name: "Event Today"
+        value_template: >
+          {% set e = strptime(
+               states.calendar.building4unit906_gmail_com.attributes.start_time,
+               '%Y-%m-%d %H:%M:%S') %}
+          {{ e.strftime('%j')|int - now().strftime('%j')|int == 0 }}
+#Event This Week
+  - platform: template
+    sensors:
+      event_this_week:
+        entity_id:
+          - calendar.building4unit906_gmail_com
+          - sensor.time
+        friendly_name: "Event This Week"
+        value_template: >
+          {% set e = strptime(
+               states.calendar.building4unit906_gmail_com.attributes.start_time,
+               '%Y-%m-%d %H:%M:%S') %}
+          {{ e.strftime('%j')|int - now().strftime('%j')|int <= 7 }}
+          
+# TP-Link Router
+#  - platform: tplink_router
+#    host: 192.168.1.98
+#    username: !secret tp-link_username
+#    password: !secret tp-link_password
+
+# Example configuration.yaml entry
+#device_tracker:
+#  - platform: tplink_router
+#    host: 192.168.1.98
+#    username: !secret tp-link_username
+#    password: !secret tp-link_password
+
+# Octoprint
+octoprint:
+  host: !secret octoprint_host
+  api_key: !secret octoprint_api_key
+  number_of_tools: 1
+  bed: true
+  sensors:
+    monitored_conditions:
+      - 'Current State'
+      - 'Temperatures'
+      - 'Job Percentage'
+      - 'Time Elapsed'
+      - 'Time Remaining'
+
+camera:
+  - platform: mjpeg
+    name: OctoPrint
+    still_image_url: !secret octoprint_still_image_url
+    mjpeg_url: !secret octoprint_mjpeg_url
+    
+# Jeremy Sleep Threshold
+binary_sensor:
+  - platform: threshold
+    entity_id: sensor.pixel_3_sleep_confidence
+    upper: 60
+    name: jeremy_sleeping
+    
+# Android IP Webcam
+android_ip_webcam:
+  - host: !secret ip
+    port: 8080
+    sensors:
+      - audio_connections
+      - battery_level
+      - battery_temp
+      - battery_voltage
+      - light
+      - motion
+      - pressure
+      - proximity
+      - sound
+      - video_connections
+    switches:
+      - motion_detect
+
+# Balcony Fan Light
+fan:
+    - platform: mqtt
+      name: "Balcony Fan"
+      command_topic: "cmnd/Balcony_Fan/FanSpeed"
+      state_topic: "stat/Balcony_Fan/RESULT"
+      state_value_template: >
+        {% if value_json.FanSpeed > 0 -%}1{% else -%}0{%- endif %}
+      payload_off: "0"
+      payload_on: "1"
+      percentage_command_topic: "cmnd/Balcony_Fan/FanSpeed"
+      percentage_state_topic: "stat/Balcony_Fan/RESULT"
+      percentage_value_template: "{{ value_json.FanSpeed }}"
+      speed_range_min:  1
+      speed_range_max: 3
+      availability_topic: tele/Balcony_Fan/LWT
+      payload_available: Online
+      payload_not_available: Offline
+light:
+    - platform: mqtt
+      name: "Balcony Fan Light"
+      command_topic: "cmnd/Balcony_Fan/power1"
+      state_topic: "stat/Balcony_Fan/POWER1"
+      qos: 1
+      payload_on: "ON"
+      payload_off: "OFF"
+      retain: false
+
+
+
+
+

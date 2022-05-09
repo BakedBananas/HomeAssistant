@@ -1,0 +1,2640 @@
+- id: '1643840581429'
+  alias: Mom Phone Plugged In
+  description: ''
+  trigger:
+  - type: plugged_in
+    platform: device
+    device_id: 8181e465d588d2f2caa33878390a1741
+    entity_id: binary_sensor.mom_s_phone_is_charging
+    domain: binary_sensor
+  condition:
+  - condition: time
+    after: '20:00:00'
+  action:
+  - type: turn_off
+    device_id: be492f6357ccc436a837f3ac6f096fa2
+    entity_id: switch.bathroom_fan_switch_1
+    domain: switch
+  - type: turn_off
+    device_id: 0458ed2f13364e0bde641acd212c204c
+    entity_id: switch.bathroom_light_switch_1
+    domain: switch
+  - type: turn_off
+    device_id: cd45ea3be3b3bf7a13ba1ea19a9afbbe
+    entity_id: light.bed_light
+    domain: light
+  - type: turn_off
+    device_id: f93977dd6a4f9ab81840af0a1519d774
+    entity_id: switch.wall_light_switch_1
+    domain: switch
+  - type: turn_off
+    device_id: 3a5b291586350408326808e7c0520276
+    entity_id: switch.sink_light_switch_1
+    domain: switch
+  mode: single
+- id: '1643913745797'
+  alias: Flight Entry Notification
+  description: ''
+  trigger:
+  - platform: event
+    event_type: opensky_entry
+  condition: []
+  action:
+  - service: media_player.play_media
+    target:
+      entity_id: media_player.living_room_echo_dot
+    data:
+      media_content_type: custom
+      media_content_id: Flight number {{ trigger.event.data.callsign }}
+  - service: notify.mobile_app_pixel_3
+    data:
+      message: Flight entry of {{ trigger.event.data.callsign }}
+  mode: single
+- id: '1643914541600'
+  alias: New Automation
+  description: ''
+  trigger:
+  - platform: time
+    at: 00:00:00
+  condition: []
+  action:
+  - service: tts.google_translate_say
+    data:
+      entity_id: media_player.bedroom_speaker
+      message: Hello
+  mode: single
+- id: '1643990017864'
+  alias: Flight Counters Reset
+  description: ''
+  trigger:
+  - platform: time
+    at: 00:00:00
+  condition: []
+  action:
+  - service: counter.reset
+    data: {}
+    target:
+      entity_id: counter.flight_arrivals
+  - service: counter.reset
+    data: {}
+    target:
+      entity_id: counter.flight_departures
+  mode: single
+- id: '1643990267193'
+  alias: Flight Arrival Counter Increment
+  trigger:
+  - platform: event
+    event_type: opensky_entry
+  action:
+  - service: counter.increment
+    data: {}
+    target:
+      entity_id: counter.flight_arrivals
+  mode: queued
+  max: 10
+- id: '1643991775312'
+  alias: Flight Departure Increment
+  description: ''
+  trigger:
+  - platform: event
+    event_type: opensky_exit
+  condition: []
+  action:
+  - service: counter.increment
+    data: {}
+    target:
+      entity_id: counter.flight_departures
+  mode: single
+- id: '1644005844350'
+  alias: Toggle Printer
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: input_button.3d_printer
+  condition: []
+  action:
+  - type: toggle
+    device_id: fcdd4d62654b535aceb417b25d55922c
+    entity_id: switch.3d_printer
+    domain: switch
+  - type: toggle
+    device_id: c90c7896a64781655c6c2f784d575de2
+    entity_id: switch.3d_printer_light
+    domain: switch
+  mode: single
+- id: '1644179644422'
+  alias: Mail Notification
+  description: ''
+  trigger:
+  - platform: time
+    at: 08:00:00
+  condition: []
+  action:
+  - service: counter.configure
+    data:
+      value: '{{ states(''counter.mail_amount'')|int + states(''sensor.mail_usps_mail'')|int}}'
+    target:
+      entity_id: counter.mail_amount
+  - condition: numeric_state
+    entity_id: counter.mail_amount
+    above: '0'
+  - device_id: 121efe9aaea9b0bc327b1636ccb2ff93
+    domain: mobile_app
+    type: notify
+    message: There are {{ states("counter.mail_amount") }} pieces of mail in the mailbox
+  - device_id: 8181e465d588d2f2caa33878390a1741
+    domain: mobile_app
+    type: notify
+    message: There are {{ states("counter.mail_amount") }} pieces of mail in the mailbox
+  - service: input_boolean.turn_on
+    data: {}
+    target:
+      entity_id: input_boolean.mail
+  mode: single
+- id: '1644258295920'
+  alias: Dad's Home (After Work)
+  description: ''
+  trigger:
+  - platform: time
+    at: '16:00:00'
+  condition:
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+  action:
+  - service: automation.turn_off
+    data: {}
+    target:
+      entity_id:
+      - automation.welcome_home_2
+  - wait_for_trigger:
+    - platform: state
+      from: 'off'
+      to: 'on'
+      entity_id: light.front_door_light
+  - service: media_player.volume_set
+    data:
+      volume_level: 0.5
+    target:
+      entity_id: media_player.living_room_echo_dot
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: Welcome Home
+      data:
+        type: announce
+        method: all
+  - service: automation.turn_on
+    data: {}
+    target:
+      entity_id:
+      - automation.it_s_cold_outside
+      - automation.it_s_hot_outside
+      - automation.new_automation_3
+  - service: input_boolean.turn_on
+    data: {}
+    target:
+      entity_id: input_boolean.present
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 30
+      milliseconds: 0
+  - service: script.mail_in_mailbox
+    data: {}
+  - service: automation.turn_on
+    data: {}
+    target:
+      entity_id:
+      - automation.welcome_home_2
+  - service: script.event_tomorrow
+    data: {}
+  mode: single
+- id: '1644266642540'
+  alias: Welcome (Present Off)
+  description: ''
+  trigger:
+  - platform: state
+    from: 'off'
+    to: 'on'
+    entity_id: binary_sensor.front_door_sensor
+  condition:
+  - condition: state
+    entity_id: input_boolean.asleep
+    state: 'off'
+  - condition: state
+    entity_id: input_boolean.present
+    state: 'off'
+  - condition: not
+    conditions:
+    - condition: time
+      weekday:
+      - mon
+      - tue
+      - wed
+      - thu
+      - fri
+      after: 09:00:00
+      before: '12:00:00'
+  action:
+  - service: media_player.volume_set
+    data:
+      volume_level: 0.5
+    target:
+      entity_id: media_player.living_room_echo_dot
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: Welcome Home
+      data:
+        type: announce
+        method: all
+  - service: input_boolean.turn_on
+    data: {}
+    target:
+      entity_id: input_boolean.present
+  - service: tts.google_translate_say
+    data:
+      entity_id: media_player.bedroom_speaker
+      message: Front Door Open
+  - service: script.auto_lights
+    data: {}
+  - service: scene.create
+    data:
+      scene_id: front_door_light_before
+      snapshot_entities:
+      - light.front_door_light
+  - type: turn_on
+    device_id: 111c6f67b5f5588def3e36ac3cf07bcd
+    entity_id: light.front_door_light
+    domain: light
+    brightness_pct: 100
+  - service: script.auto_blinds
+    data: {}
+  - service: script.fan_idle
+    data: {}
+  - service: script.auto_thermostat
+    data: {}
+  - wait_for_trigger:
+    - platform: state
+      entity_id: binary_sensor.front_door_sensor
+      from: 'off'
+      to: 'on'
+  - service: script.mail_in_mailbox
+    data: {}
+  - service: script.event_tomorrow
+    data: {}
+  - service: script.event_today_living_room
+    data: {}
+  - scene: scene.front_door_light_before
+  mode: single
+- id: '1644283742894'
+  alias: Jeremy Movie Lights
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: input_button.jeremy_movie_lights
+  condition: []
+  action:
+  - type: turn_off
+    device_id: fe6f341daeccf1ce8c41f51d1cb17bb0
+    entity_id: switch.bedroom_light_switch_1
+    domain: switch
+  - type: turn_on
+    device_id: 5b136413289ad677ac1d912e15c4b33c
+    entity_id: light.sconces
+    domain: light
+    brightness_pct: 40
+  mode: single
+- id: '1644378349136'
+  alias: Jeremy's Sleeping
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: binary_sensor.jeremy_sleeping
+    to: 'on'
+    for:
+      hours: 0
+      minutes: 30
+      seconds: 0
+  condition:
+  - condition: time
+    after: '22:00:00'
+    before: 07:00:00
+  action:
+  - type: turn_off
+    device_id: fe6f341daeccf1ce8c41f51d1cb17bb0
+    entity_id: switch.bedroom_light_switch_1
+    domain: switch
+  - type: turn_off
+    device_id: 5b136413289ad677ac1d912e15c4b33c
+    entity_id: light.sconces
+    domain: light
+  - service: media_player.media_pause
+    data: {}
+    target:
+      entity_id: media_player.bedroom_chromecast
+  - type: turn_off
+    device_id: 4c512fa03d948ebd7073c0d5a83a9d9c
+    entity_id: switch.bedroom_tv
+    domain: switch
+  mode: single
+- id: '1644422939173'
+  alias: Jeremy's Awake
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: binary_sensor.jeremy_sleeping
+    to: 'off'
+    for:
+      hours: 0
+      minutes: 10
+      seconds: 0
+  condition:
+  - condition: time
+    after: 05:00:00
+    before: '12:00:00'
+  action:
+  - type: turn_on
+    device_id: 4c512fa03d948ebd7073c0d5a83a9d9c
+    entity_id: switch.bedroom_tv
+    domain: switch
+  mode: single
+- id: '1644425126111'
+  alias: It's Nice Outside
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: weather.home
+    attribute: temperature
+    below: '85'
+    above: '60'
+  condition:
+  - condition: state
+    entity_id: input_boolean.asleep
+    state: 'off'
+  - condition: state
+    entity_id: input_boolean.present
+    state: 'on'
+  action:
+  - service: script.its_nice_outside
+    data: {}
+  - service: script.its_nice_outside_high_pollen
+    data: {}
+  mode: single
+- id: '1644426367584'
+  alias: It's Cold Outside
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: weather.home
+    attribute: temperature
+    below: '60'
+  condition:
+  - condition: state
+    entity_id: input_boolean.asleep
+    state: 'off'
+  - condition: state
+    entity_id: input_boolean.present
+    state: 'on'
+  action:
+  - service: script.its_cold_outside
+    data: {}
+  mode: single
+- id: '1644426506310'
+  alias: It's Hot Outside
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: weather.home
+    attribute: temperature
+    above: '85'
+  condition:
+  - condition: state
+    entity_id: input_boolean.asleep
+    state: 'off'
+  - condition: state
+    entity_id: input_boolean.present
+    state: 'on'
+  action:
+  - service: script.its_hot_outside
+    data: {}
+  mode: single
+- id: '1644452970596'
+  alias: Jeremy Everything Off
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: switch.bedroom_light_switch_1
+    from: 'on'
+    to: 'off'
+  condition:
+  - condition: time
+    before: '20:00:00'
+    after: 00:00:00
+  action:
+  - type: turn_off
+    device_id: 5b136413289ad677ac1d912e15c4b33c
+    entity_id: light.sconces
+    domain: light
+  - condition: time
+    after: '12:00:00'
+  - type: turn_off
+    device_id: 4c512fa03d948ebd7073c0d5a83a9d9c
+    entity_id: switch.bedroom_tv
+    domain: switch
+  mode: single
+- id: '1644533614929'
+  alias: Jeremy Bedroom Light On
+  description: ''
+  trigger:
+  - platform: device
+    type: turned_on
+    device_id: fe6f341daeccf1ce8c41f51d1cb17bb0
+    entity_id: switch.bedroom_light_switch_1
+    domain: switch
+  condition: []
+  action:
+  - type: turn_on
+    device_id: 5b136413289ad677ac1d912e15c4b33c
+    entity_id: light.sconces
+    domain: light
+    brightness_pct: 70
+  - type: turn_on
+    device_id: 4c512fa03d948ebd7073c0d5a83a9d9c
+    entity_id: switch.bedroom_tv
+    domain: switch
+  - service: notify.mobile_app_pixel_3
+    data:
+      message: Bedroom Light Turned On
+  mode: single
+- id: '1644692729261'
+  alias: Jeremy's Fan On (Night)
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.octoprint_actual_tool0_temp
+    above: '64'
+  - platform: time
+    at: '23:00:00'
+  condition:
+  - condition: or
+    conditions:
+    - condition: time
+      after: '23:00:00'
+    - condition: time
+      before: 08:00:00
+  - condition: numeric_state
+    entity_id: sensor.octoprint_actual_tool0_temp
+    above: '64'
+  action:
+  - type: turn_on
+    device_id: 568df23ff4b5e8f026a99a5efd6adec0
+    entity_id: switch.bedroom_fan
+    domain: switch
+  mode: single
+- id: '1644692778328'
+  alias: Jeremy's Fan Off (Night)
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.octoprint_actual_tool0_temp
+    below: '65'
+  - platform: time
+    at: '23:00:00'
+  condition:
+  - condition: or
+    conditions:
+    - condition: time
+      after: '23:00:00'
+    - condition: time
+      before: 08:00:00
+  - condition: numeric_state
+    entity_id: sensor.octoprint_actual_tool0_temp
+    below: '65'
+  action:
+  - type: turn_off
+    device_id: 568df23ff4b5e8f026a99a5efd6adec0
+    entity_id: switch.bedroom_fan
+    domain: switch
+  mode: single
+- id: '1644692850700'
+  alias: Jeremy's Fan On (Day)
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.octoprint_actual_tool0_temp
+    above: '74'
+    for:
+      hours: 0
+      minutes: 10
+      seconds: 0
+  - platform: time
+    at: 08:00:00
+  condition:
+  - condition: and
+    conditions:
+    - condition: time
+      after: 08:00:00
+    - condition: time
+      before: '23:00:00'
+    - condition: numeric_state
+      entity_id: sensor.octoprint_actual_tool0_temp
+      above: '74'
+  action:
+  - type: turn_on
+    device_id: 568df23ff4b5e8f026a99a5efd6adec0
+    entity_id: switch.bedroom_fan
+    domain: switch
+  mode: single
+- id: '1644692890385'
+  alias: Jeremy's Fan Off (Day)
+  description: ''
+  trigger:
+  - platform: numeric_state
+    below: '74'
+    entity_id: sensor.octoprint_actual_tool0_temp
+    for:
+      hours: 0
+      minutes: 10
+      seconds: 0
+  - platform: time
+    at: 08:00:00
+  condition:
+  - condition: and
+    conditions:
+    - condition: time
+      after: 07:59:00
+      before: '23:00:00'
+    - condition: numeric_state
+      entity_id: sensor.octoprint_actual_tool0_temp
+      below: '75'
+  action:
+  - type: turn_off
+    device_id: 568df23ff4b5e8f026a99a5efd6adec0
+    entity_id: switch.bedroom_fan
+    domain: switch
+  mode: single
+- id: '1644694915345'
+  alias: Reset Mail
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: input_boolean.mail
+    from: 'on'
+    to: 'off'
+  condition: []
+  action:
+  - service: counter.reset
+    data: {}
+    target:
+      entity_id: counter.mail_amount
+  mode: single
+- id: '1645041031101'
+  alias: 'Good Morning Weekday '
+  description: ''
+  trigger:
+  - platform: time
+    at: input_datetime.alarm
+  condition:
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+  action:
+  - service: input_boolean.turn_off
+    data: {}
+    target:
+      entity_id: input_boolean.asleep
+  - service: media_player.volume_set
+    data:
+      volume_level: 0.5
+    target:
+      entity_id:
+      - media_player.master_echo_dot
+  - repeat:
+      count: '5'
+      sequence:
+      - service: media_player.play_media
+        target:
+          entity_id: media_player.master_echo_dot
+        data:
+          media_content_type: sound
+          media_content_id: amzn_sfx_church_bell_1x_02
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 10
+      milliseconds: 0
+  - service: script.auto_thermostat
+    data: {}
+  - type: turn_on
+    device_id: e06cd9d5167143aed441bfdad84c2236
+    entity_id: switch.couch_light
+    domain: switch
+  - service: script.event_today_master
+    data: {}
+  mode: single
+- id: '1645132967411'
+  alias: Tablet Charging On
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.fire_tablet_battery_level
+    below: '30'
+  condition: []
+  action:
+  - type: turn_on
+    device_id: c51c8f54f13e7815e1704a358c4442ae
+    entity_id: switch.tablet_charger
+    domain: switch
+  mode: single
+- id: '1645133012366'
+  alias: Tablet Charging Off
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.fire_tablet_battery_level
+    above: '60'
+  condition: []
+  action:
+  - type: turn_off
+    device_id: c51c8f54f13e7815e1704a358c4442ae
+    entity_id: switch.tablet_charger
+    domain: switch
+  mode: single
+- id: '1645505281426'
+  alias: TV Toggle
+  description: ''
+  trigger:
+  - platform: time
+    at: 00:00:00
+  condition:
+  - condition: time
+    after: 00:01:00
+  action:
+  - service: androidtv.adb_command
+    data:
+      command: POWER
+    target:
+      device_id: 04ed891602f081a5da296429ac0bec39
+  mode: single
+- id: '1645657663109'
+  alias: Open Contour on Fire TV Power On
+  description: ''
+  trigger:
+  - platform: state
+    from: 'off'
+    entity_id: media_player.fire_tv_192_168_0_166
+  condition: []
+  action:
+  - service: media_player.select_source
+    data:
+      source: Cox
+    target:
+      device_id: 04ed891602f081a5da296429ac0bec39
+  - service: media_player.media_play
+    data: {}
+    target:
+      entity_id: media_player.fire_tv_192_168_0_166
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 20
+      milliseconds: 0
+  - service: androidtv.adb_command
+    data:
+      command: LEFT
+    target:
+      device_id: 04ed891602f081a5da296429ac0bec39
+  - service: androidtv.adb_command
+    data:
+      command: DOWN
+    target:
+      device_id: 04ed891602f081a5da296429ac0bec39
+  - service: androidtv.adb_command
+    data:
+      command: DOWN
+    target:
+      device_id: 04ed891602f081a5da296429ac0bec39
+  - service: androidtv.adb_command
+    data:
+      command: DOWN
+    target:
+      device_id: 04ed891602f081a5da296429ac0bec39
+  - service: androidtv.adb_command
+    data:
+      command: DOWN
+    target:
+      device_id: 04ed891602f081a5da296429ac0bec39
+  - service: androidtv.adb_command
+    data:
+      command: CENTER
+    target:
+      device_id: 04ed891602f081a5da296429ac0bec39
+  - service: androidtv.adb_command
+    data:
+      command: DOWN
+    target:
+      device_id: 04ed891602f081a5da296429ac0bec39
+  - service: androidtv.adb_command
+    data:
+      command: DOWN
+    target:
+      device_id: 04ed891602f081a5da296429ac0bec39
+  - service: androidtv.adb_command
+    data:
+      command: DOWN
+    target:
+      device_id: 04ed891602f081a5da296429ac0bec39
+  mode: single
+- id: '1645714668472'
+  alias: TV Unavailable
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: media_player.fire_tv_192_168_0_182
+    to: unavailable
+  condition: []
+  action:
+  - service: notify.mobile_app_pixel_3
+    data:
+      message: Fire TV Disconnected
+  mode: single
+- id: '1645892893010'
+  alias: 'Good Morning Weekend '
+  description: ''
+  trigger:
+  - platform: device
+    type: turned_on
+    device_id: fd712bfa6ac747fee7803fd1600c74a6
+    entity_id: switch.kitchen_light_switch_1
+    domain: switch
+  condition:
+  - condition: and
+    conditions:
+    - condition: time
+      after: 03:00:00
+      weekday:
+      - sat
+      - sun
+    - condition: state
+      entity_id: input_boolean.asleep
+      state: 'on'
+    - condition: time
+      before: '12:00:00'
+      weekday:
+      - sat
+      - sun
+  action:
+  - service: input_boolean.turn_off
+    data: {}
+    target:
+      entity_id: input_boolean.asleep
+  - service: script.auto_thermostat
+    data: {}
+  - service: script.auto_lights
+    data: {}
+  - service: script.event_today_kitchen
+    data: {}
+  mode: single
+- id: '1645897969067'
+  alias: Some Light (Light Sensor)
+  description: ''
+  trigger:
+  - platform: numeric_state
+    for:
+      hours: 0
+      minutes: 5
+      seconds: 0
+    entity_id: sensor.ip_webcam_light_level
+    below: '22'
+    above: '12'
+  condition:
+  - condition: state
+    entity_id: input_boolean.asleep
+    state: 'off'
+  - condition: state
+    entity_id: input_boolean.present
+    state: 'on'
+  - condition: state
+    entity_id: input_boolean.movie_lights
+    state: 'off'
+  - condition: sun
+    after: sunrise
+  action:
+  - service: script.some_light
+    data: {}
+  mode: single
+- id: '1645897990226'
+  alias: 'No Light (Light Sensor) '
+  description: ''
+  trigger:
+  - platform: numeric_state
+    below: '13'
+    for:
+      hours: 0
+      minutes: 5
+      seconds: 0
+    entity_id: sensor.ip_webcam_light_level
+  condition:
+  - condition: state
+    entity_id: input_boolean.asleep
+    state: 'off'
+  - condition: state
+    entity_id: input_boolean.present
+    state: 'on'
+  - condition: state
+    entity_id: input_boolean.movie_lights
+    state: 'off'
+  - condition: sun
+    after: sunrise
+  action:
+  - service: script.no_light
+    data: {}
+  mode: single
+- id: '1645898056116'
+  alias: 'Lots of Light (Light Sensor) '
+  description: ''
+  trigger:
+  - platform: numeric_state
+    above: '25'
+    for:
+      hours: 0
+      minutes: 5
+      seconds: 0
+    entity_id: sensor.ip_webcam_light_level
+  condition:
+  - condition: state
+    entity_id: input_boolean.asleep
+    state: 'off'
+  - condition: state
+    entity_id: input_boolean.present
+    state: 'on'
+  - condition: state
+    entity_id: input_boolean.movie_lights
+    state: 'off'
+  - condition: sun
+    after: sunrise
+  action:
+  - service: script.lots_of_light
+    data: {}
+  mode: single
+- id: '1645907914403'
+  alias: 'More Light (Light Sensor) '
+  description: ''
+  trigger:
+  - platform: numeric_state
+    below: '26'
+    for:
+      hours: 0
+      minutes: 5
+      seconds: 0
+    entity_id: sensor.ip_webcam_light_level
+    above: '21'
+  condition:
+  - condition: state
+    entity_id: input_boolean.asleep
+    state: 'off'
+  - condition: state
+    entity_id: input_boolean.present
+    state: 'on'
+  - condition: state
+    entity_id: input_boolean.movie_lights
+    state: 'off'
+  - condition: sun
+    after: sunrise
+  action:
+  - service: script.more_light
+    data: {}
+  mode: single
+- id: '1645995550225'
+  alias: Turn Sunny On
+  description: ''
+  trigger:
+  - platform: sun
+    event: sunrise
+    offset: '0'
+  condition: []
+  action:
+  - service: humidifier.turn_on
+    data: {}
+  mode: single
+- id: '1645995589265'
+  alias: Turn Sunny Off
+  description: ''
+  trigger:
+  - platform: sun
+    event: sunset
+    offset: -00:45:00
+  condition: []
+  action:
+  - service: input_boolean.turn_off
+    data: {}
+    target:
+      entity_id: input_boolean.sunny
+  mode: single
+- id: '1646236972018'
+  alias: Mom Phone Ringing (Living Room)
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: sensor.mom_s_phone_phone_state
+    to: ringing
+  condition: []
+  action:
+  - service: scene.create
+    data:
+      scene_id: alexa_before_call
+      snapshot_entities:
+      - media_player.echo_show
+      - media_player.living_room_echo_dot
+      - media_player.balcony_echo_dot
+  - service: scene.create
+    data:
+      scene_id: before_call_curio
+      snapshot_entities:
+      - light.curio
+  - service: scene.create
+    data:
+      scene_id: before_call_cabinet_lights_left
+      snapshot_entities:
+      - light.cabinet_lights_left
+  - service: scene.create
+    data:
+      scene_id: before_call_cabinet_lights_right
+      snapshot_entities:
+      - light.cabinet_lights_right
+  - service: media_player.volume_set
+    data:
+      volume_level: 0.5
+    target:
+      entity_id:
+      - media_player.echo_show
+      - media_player.living_room_echo_dot
+      - media_player.balcony_echo_dot
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: Mom's Phone Is Ringing
+      data:
+        type: announce
+        method: all
+  - service: notify.alexa_media_echo_show
+    data:
+      message: Mom's Phone Is Ringing
+      data:
+        type: announce
+        method: all
+  - service: notify.alexa_media_balcony_echo_dot
+    data:
+      message: Mom's Phone Is Ringing
+      data:
+        type: announce
+        method: all
+  - repeat:
+      while:
+      - condition: state
+        entity_id: sensor.mom_s_phone_phone_state
+        state: ringing
+      sequence:
+      - service: script.party_lights
+        data:
+          entity: light.curio
+      - service: script.party_lights
+        data:
+          entity: light.cabinet_lights_left
+      - service: script.party_lights
+        data:
+          entity: light.cabinet_lights_right
+  - scene: scene.before_call_curio
+  - scene: scene.before_call_cabinet_lights_left
+  - scene: scene.before_call_cabinet_lights_right
+  - condition: state
+    entity_id: sensor.mom_s_phone_phone_state
+    state: idle
+  - scene: scene.alexa_before_call
+  - service: media_player.media_play
+    data: {}
+    target:
+      entity_id: media_player.main
+  mode: single
+- id: '1646239654264'
+  alias: 'Mom Phone Ringing (Master) '
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: sensor.mom_s_phone_phone_state
+    to: ringing
+  condition: []
+  action:
+  - service: media_player.volume_set
+    data:
+      volume_level: 0.5
+    target:
+      entity_id:
+      - media_player.master_echo_dot
+  - service: notify.alexa_media_master_echo_dot
+    data:
+      message: Mom's Phone Is Ringing
+      data:
+        type: announce
+        method: all
+  - repeat:
+      while:
+      - condition: state
+        entity_id: sensor.mom_s_phone_phone_state
+        state: ringing
+      sequence:
+      - type: toggle
+        device_id: f93977dd6a4f9ab81840af0a1519d774
+        entity_id: switch.wall_light_switch_1
+        domain: switch
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 2
+          milliseconds: 0
+  - type: turn_off
+    device_id: f93977dd6a4f9ab81840af0a1519d774
+    entity_id: switch.wall_light_switch_1
+    domain: switch
+  mode: single
+- id: '1646242167063'
+  alias: Mom on Phone
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: sensor.mom_s_phone_phone_state
+    to: offhook
+  condition: []
+  action:
+  - service: media_player.volume_set
+    data:
+      volume_level: 0.1
+    target:
+      entity_id:
+      - media_player.echo_show
+      - media_player.living_room_echo_dot
+      - media_player.master_echo_dot
+  - wait_for_trigger:
+    - platform: state
+      entity_id: sensor.mom_s_phone_phone_state
+      from: offhook
+  - service: media_player.volume_set
+    data:
+      volume_level: 0.3
+    target:
+      entity_id:
+      - media_player.echo_show
+      - media_player.living_room_echo_dot
+      - media_player.master_echo_dot
+  mode: single
+- id: '1646331951374'
+  alias: Dad Back to Work
+  description: ''
+  trigger:
+  - platform: time
+    at: '13:50:00'
+  condition:
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+  action:
+  - service: notify.alexa_media_balcony_echo_dot
+    data:
+      message: It's time to go back to work
+      data:
+        type: announce
+        method: all
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: It's time to go back to work
+      data:
+        type: announce
+        method: all
+  - condition: not
+    conditions:
+    - condition: state
+      state: 'off'
+      entity_id: media_player.fire_tv_192_168_0_194
+  - service: androidtv.adb_command
+    data:
+      command: POWER
+    target:
+      device_id: 04ed891602f081a5da296429ac0bec39
+  mode: single
+- id: '1646441275108'
+  alias: Kitchen Light On (Save State)
+  description: ''
+  trigger:
+  - platform: device
+    type: turned_on
+    device_id: fd712bfa6ac747fee7803fd1600c74a6
+    entity_id: switch.kitchen_light_switch_1
+    domain: switch
+  condition:
+  - condition: and
+    conditions:
+    - condition: state
+      entity_id: input_boolean.present
+      state: 'on'
+    - condition: state
+      entity_id: input_boolean.asleep
+      state: 'off'
+  action:
+  - service: script.kitchen_light_save_state
+    data: {}
+  - service: light.turn_on
+    data:
+      brightness_pct: 100
+      color_name: white
+    target:
+      device_id:
+      - 57ca360583ef043fca79dd8775b594f5
+      - a4a58c4691e979803d6c51e632ad44ed
+      entity_id:
+      - light.cabinet_lights_left
+      - light.cabinet_lights_right
+  mode: single
+- id: '1646496092488'
+  alias: Flight Entry Notification (Balcony)
+  description: ''
+  trigger:
+  - platform: event
+    event_type: opensky_entry
+  condition: []
+  action:
+  - service: media_player.play_media
+    target:
+      entity_id: media_player.balcony_echo_dot
+    data:
+      media_content_type: custom
+      media_content_id: Flight number {{ trigger.event.data.callsign }}
+  - service: notify.mobile_app_pixel_3
+    data:
+      message: Flight entry of {{ trigger.event.data.callsign }}
+  mode: single
+- id: '1646574688849'
+  alias: Motion Sensor Test
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.ip_webcam_motion
+    above: '20'
+  condition: []
+  action:
+  - service: notify.mobile_app_pixel_3
+    data:
+      message: Living Room Motion Sensed
+  mode: single
+- id: '1646579695488'
+  alias: Kitchen Light Off (Save State)
+  description: ''
+  trigger:
+  - platform: device
+    type: turned_off
+    device_id: fd712bfa6ac747fee7803fd1600c74a6
+    entity_id: switch.kitchen_light_switch_1
+    domain: switch
+  condition:
+  - condition: and
+    conditions:
+    - condition: state
+      entity_id: input_boolean.present
+      state: 'on'
+    - condition: state
+      entity_id: input_boolean.asleep
+      state: 'off'
+  action:
+  - scene: scene.cabinetlights
+  - scene: scene.cabinetlights2
+  mode: single
+- id: '1646586595046'
+  alias: Mom Good Morning
+  description: ''
+  trigger:
+  - platform: time
+    at: input_datetime.mom_s_alarm
+  condition:
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+  action:
+  - repeat:
+      count: '5'
+      sequence:
+      - service: media_player.play_media
+        target:
+          entity_id: media_player.master_echo_dot
+        data:
+          media_content_type: sound
+          media_content_id: amzn_sfx_church_bell_1x_02
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 5
+      milliseconds: 0
+  - service: script.event_today_master
+    data: {}
+  - condition: time
+    before: 07:00:00
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+  - repeat:
+      count: '6'
+      sequence:
+      - service: notify.alexa_media_master_echo_dot
+        data:
+          message: It will take {{states('sensor.waze_travel_time')}} minutes via
+            {{state_attr('sensor.waze_travel_time','route')}} to get to work.
+          data:
+            type: announce
+            method: all
+      - service: notify.alexa_media_living_room_echo_dot
+        data:
+          message: It will take {{states('sensor.waze_travel_time')}} minutes via
+            {{state_attr('sensor.waze_travel_time','route')}} to get to work.
+          data:
+            type: announce
+            method: all
+      - service: notify.alexa_media_echo_show
+        data:
+          message: It will take {{states('sensor.waze_travel_time')}} minutes via
+            {{state_attr('sensor.waze_travel_time','route')}} to get to work.
+          data:
+            type: announce
+            method: all
+      - delay:
+          hours: 0
+          minutes: 10
+          seconds: 0
+          milliseconds: 0
+  mode: single
+- id: '1646611985173'
+  alias: 'Kitchen Light Off (No Save State)  '
+  description: ''
+  trigger:
+  - platform: device
+    type: turned_off
+    device_id: fd712bfa6ac747fee7803fd1600c74a6
+    entity_id: switch.kitchen_light_switch_1
+    domain: switch
+  condition:
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: input_boolean.present
+      state: 'off'
+    - condition: state
+      entity_id: input_boolean.asleep
+      state: 'on'
+  action:
+  - type: turn_off
+    device_id: a4a58c4691e979803d6c51e632ad44ed
+    entity_id: light.cabinet_lights_right
+    domain: light
+  - type: turn_off
+    device_id: 57ca360583ef043fca79dd8775b594f5
+    entity_id: light.cabinet_lights_left
+    domain: light
+  mode: single
+- id: '1646612193685'
+  alias: Kitchen Light On (No Save State)
+  description: ''
+  trigger:
+  - platform: device
+    type: turned_on
+    device_id: fd712bfa6ac747fee7803fd1600c74a6
+    entity_id: switch.kitchen_light_switch_1
+    domain: switch
+  condition:
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: input_boolean.present
+      state: 'off'
+    - condition: state
+      entity_id: input_boolean.asleep
+      state: 'on'
+  action:
+  - service: light.turn_on
+    data:
+      brightness_pct: 100
+      color_name: white
+    target:
+      device_id:
+      - 57ca360583ef043fca79dd8775b594f5
+      - a4a58c4691e979803d6c51e632ad44ed
+      entity_id:
+      - light.cabinet_lights_left
+      - light.cabinet_lights_right
+  mode: single
+- id: '1646617607331'
+  alias: Weekday Cabinet Light Sunrise
+  description: ''
+  trigger:
+  - platform: sun
+    event: sunrise
+    offset: '0'
+  condition:
+  - condition: and
+    conditions:
+    - condition: state
+      entity_id: switch.kitchen_light_switch_1
+      state: 'off'
+    - condition: time
+      weekday:
+      - mon
+      - tue
+      - wed
+      - thu
+      - fri
+  action:
+  - type: turn_off
+    device_id: 35ba011bf52119371ef2d56dda25d2af
+    entity_id: light.cabinet_lights_1
+    domain: light
+  - type: turn_off
+    device_id: 57ca360583ef043fca79dd8775b594f5
+    entity_id: light.cabinet_lights_2
+    domain: light
+  mode: single
+- id: '1646692507226'
+  alias: Mom ETA
+  description: ''
+  trigger:
+  - platform: time
+    at: '16:45:00'
+  condition:
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+  action:
+  - service: notify.alexa_media_master_echo_dot
+    data:
+      message: It will take mom {{states('sensor.waze_travel_time_2')}} minutes to
+        get home.
+      data:
+        type: announce
+        method: all
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: It will take mom {{states('sensor.waze_travel_time_2')}} minutes to
+        get home.
+      data:
+        type: announce
+        method: all
+  mode: single
+- id: '1646706273833'
+  alias: Get Tomorrow Night Temp
+  description: ''
+  trigger:
+  - platform: time
+    at: '23:59:00'
+  condition: []
+  action:
+  - service: input_number.set_value
+    data_template:
+      entity_id: input_number.night_temp
+      value: '{{ state_attr(''weather.home'', ''forecast'')[0][''templow''] }}'
+  mode: single
+- id: '1646858395814'
+  alias: Good Night After Midnight
+  description: ''
+  trigger:
+  - platform: time
+    at: '23:59:00'
+  condition:
+  - condition: state
+    entity_id: input_boolean.asleep
+    state: 'off'
+  action:
+  - service: script.auto_night_thermostat
+    data: {}
+  - wait_for_trigger:
+    - platform: state
+      entity_id: input_boolean.asleep
+      from: 'off'
+      to: 'on'
+  - service: fan.turn_off
+    data: {}
+    target:
+      entity_id: fan.balcony_fan
+  - service: light.turn_off
+    data: {}
+    target:
+      device_id:
+      - 57ca360583ef043fca79dd8775b594f5
+      - a4a58c4691e979803d6c51e632ad44ed
+      - dca3c2b2055bc70aa6ac1bc915003af4
+      - 196015355b89e4fd07c11f052be69acc
+      - 111c6f67b5f5588def3e36ac3cf07bcd
+      entity_id: light.balcony_fan_light
+  - service: switch.turn_off
+    data: {}
+    target:
+      device_id:
+      - 4027095f0a14e6b3a9053dcc8b92742e
+      - fd712bfa6ac747fee7803fd1600c74a6
+      - 5c26178485fa45938ff62baff6029779
+  - service: script.event_tomorrow
+    data: {}
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: Good night, sleep tight
+      data:
+        type: announce
+        method: all
+  mode: single
+- id: '1646858450601'
+  alias: 'Good Night Before Midnight '
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: input_boolean.asleep
+    from: 'off'
+    to: 'on'
+  condition:
+  - condition: time
+    before: '23:59:00'
+    after: '19:00:00'
+  action:
+  - service: media_player.volume_set
+    data:
+      volume_level: 0.5
+    target:
+      entity_id: media_player.living_room_echo_dot
+  - service: script.event_tomorrow
+    data: {}
+  - service: script.fan_off
+    data: {}
+  - service: light.turn_off
+    data: {}
+    target:
+      device_id:
+      - 57ca360583ef043fca79dd8775b594f5
+      - a4a58c4691e979803d6c51e632ad44ed
+      - dca3c2b2055bc70aa6ac1bc915003af4
+      - 196015355b89e4fd07c11f052be69acc
+      - 111c6f67b5f5588def3e36ac3cf07bcd
+      entity_id: light.balcony_fan_light
+  - service: switch.turn_off
+    data: {}
+    target:
+      device_id:
+      - 4027095f0a14e6b3a9053dcc8b92742e
+      - fd712bfa6ac747fee7803fd1600c74a6
+      - 5c26178485fa45938ff62baff6029779
+      - e06cd9d5167143aed441bfdad84c2236
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: Good Night, Sleep Tight
+      data:
+        type: announce
+        method: all
+  - service: script.auto_night_thermostat
+    data: {}
+  mode: single
+- id: '1646864041784'
+  alias: Jeremy TV Off
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: switch.bedroom_tv
+    from: 'on'
+    to: 'off'
+  condition: []
+  action:
+  - service: scene.create
+    data:
+      scene_id: jeremy_last_watched
+      snapshot_entities:
+      - media_player.bedroom_chromecast
+  - service: media_player.media_play_pause
+    data: {}
+    target:
+      entity_id: media_player.bedroom_chromecast
+  mode: single
+- id: '1647193332847'
+  alias: Call Jeremy
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: input_button.call_jeremy
+  condition: []
+  action:
+  - service: notify.mobile_app_pixel_3
+    data:
+      message: Someone's calling for you
+  - service: media_player.volume_set
+    data:
+      volume_level: 0.5
+    target:
+      entity_id: media_player.bedroom_speaker
+      device_id: 1ef021f155fd24d432d177b3b2572feb
+  - service: tts.google_translate_say
+    data:
+      entity_id: media_player.bedroom_speaker
+      message: Someone's calling for you
+  mode: single
+- id: '1647536560902'
+  alias: Gone to Work (Morning)
+  description: ''
+  trigger:
+  - platform: time
+    at: input_datetime.mom_s_alarm
+  condition:
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+  action:
+  - delay:
+      hours: 1
+      minutes: 30
+      seconds: 0
+      milliseconds: 0
+  - service: input_boolean.turn_off
+    data: {}
+    target:
+      entity_id: input_boolean.present
+  mode: single
+- id: '1647536692928'
+  alias: Dad Home (Lunch)
+  description: ''
+  trigger:
+  - platform: time
+    at: '12:00:00'
+  condition:
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+  - condition: state
+    state: 'off'
+    entity_id: input_boolean.present
+  action:
+  - service: automation.turn_off
+    data: {}
+    target:
+      entity_id: automation.welcome_home_2
+  - wait_for_trigger:
+    - platform: state
+      from: 'off'
+      to: 'on'
+      entity_id: binary_sensor.front_door_sensor
+  - service: input_boolean.turn_on
+    data: {}
+    target:
+      entity_id: input_boolean.present
+  - type: turn_on
+    device_id: fd712bfa6ac747fee7803fd1600c74a6
+    entity_id: switch.kitchen_light_switch_1
+    domain: switch
+  - condition: numeric_state
+    entity_id: weather.home
+    attribute: temperature
+    above: '50'
+  - service: script.auto_blinds
+    data: {}
+  - service: automation.trigger
+    data: {}
+    target:
+      entity_id: automation.tv_test
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 5
+      milliseconds: 0
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: It's Nice Outside so I turned the Balcony TV on
+      data:
+        type: announce
+        method: all
+  - delay:
+      hours: 0
+      minutes: 1
+      seconds: 0
+      milliseconds: 0
+  - service: androidtv.adb_command
+    data:
+      command: CENTER
+    target:
+      device_id: 04ed891602f081a5da296429ac0bec39
+  - service: automation.turn_on
+    data: {}
+    target:
+      entity_id: automation.welcome_home_2
+  - service: automation.turn_off
+    data: {}
+    target:
+      entity_id: automation.dad_lunch
+  mode: single
+- id: '1647537158119'
+  alias: Present Off
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: input_boolean.present
+    from: 'on'
+    to: 'off'
+  condition: []
+  action:
+  - service: script.fan_off
+    data: {}
+  - service: light.turn_off
+    data: {}
+    target:
+      device_id:
+      - dca3c2b2055bc70aa6ac1bc915003af4
+      - 196015355b89e4fd07c11f052be69acc
+      - 111c6f67b5f5588def3e36ac3cf07bcd
+      - 57ca360583ef043fca79dd8775b594f5
+      - a4a58c4691e979803d6c51e632ad44ed
+      entity_id: light.balcony_fan_light
+  - service: switch.turn_off
+    data: {}
+    target:
+      device_id:
+      - be492f6357ccc436a837f3ac6f096fa2
+      - 0458ed2f13364e0bde641acd212c204c
+      - 4027095f0a14e6b3a9053dcc8b92742e
+      - fd712bfa6ac747fee7803fd1600c74a6
+      - 5c26178485fa45938ff62baff6029779
+      - 3a5b291586350408326808e7c0520276
+      - f93977dd6a4f9ab81840af0a1519d774
+      - e06cd9d5167143aed441bfdad84c2236
+  - service: climate.set_hvac_mode
+    data:
+      hvac_mode: heat_cool
+    target:
+      entity_id: climate.thermostat
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 10
+      milliseconds: 0
+  - service: climate.set_temperature
+    data:
+      target_temp_high: 80
+      target_temp_low: 60
+    target:
+      entity_id: climate.thermostat
+  - service: script.close_blinds
+    data: {}
+  - service: script.clean_main
+    data: {}
+  mode: single
+- id: '1647539716731'
+  alias: Calendar Notification for Tomorrow
+  description: ''
+  trigger:
+  - platform: time
+    at: 00:00:00
+  condition:
+  - condition: state
+    entity_id: sensor.event_tomorrow
+    state: 'on'
+  action:
+  - service: tts.google_translate_say
+    data:
+      entity_id: media_player.bedroom_speaker
+      message: Tomorrow '{{states.calendar.building4unit906_gmail_com.attributes.message}}'
+        at '{{as_timestamp (states.calendar.building4unit906_gmail_com.attributes.start_time
+        ) | timestamp_custom('%-I %-M %p') }} '
+  mode: single
+- id: '1647540265778'
+  alias: Dad Back to Work (Present Off)
+  description: ''
+  trigger:
+  - platform: time
+    at: '14:00:00'
+  condition:
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+  action:
+  - service: input_boolean.turn_off
+    data: {}
+    target:
+      entity_id: input_boolean.present
+  - service: automation.turn_on
+    data: {}
+    target:
+      entity_id:
+      - automation.dad_lunch
+      - automation.welcome_home_2
+  mode: single
+- id: '1647552106343'
+  alias: Mom's Home (After Work)
+  description: ''
+  trigger:
+  - platform: time
+    at: '16:45:00'
+  condition:
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+  action:
+  - service: automation.turn_off
+    data: {}
+    target:
+      entity_id:
+      - automation.welcome_home_2
+      - automation.after_welcomr_not_sunny
+  - wait_for_trigger:
+    - platform: state
+      from: 'off'
+      to: 'on'
+      entity_id: light.front_door_light
+  - service: media_player.volume_set
+    data:
+      volume_level: 0.5
+    target:
+      entity_id: media_player.living_room_echo_dot
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: Welcome Home
+      data:
+        type: announce
+        method: all
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 30
+      milliseconds: 0
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: There are {{ states("counter.mail_amount") }} pieces of mail in the
+        mailbox
+      data:
+        type: announce
+        method: all
+  - condition: state
+    entity_id: sensor.event_tomorrow
+    state: 'True'
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: Tomorrow '{{states.calendar.building4unit906_gmail_com.attributes.message}}'
+        at '{{as_timestamp (states.calendar.building4unit906_gmail_com.attributes.start_time
+        ) | timestamp_custom('%-I %-M %p') }} '
+      data:
+        type: announce
+        method: all
+  - service: automation.turn_on
+    data: {}
+    target:
+      entity_id:
+      - automation.welcome_home_2
+  mode: single
+- id: '1647624775939'
+  alias: Welcome (Present)
+  description: ''
+  trigger:
+  - platform: state
+    from: 'off'
+    to: 'on'
+    entity_id: binary_sensor.front_door_sensor
+  condition:
+  - condition: state
+    entity_id: input_boolean.asleep
+    state: 'off'
+  - condition: state
+    entity_id: input_boolean.present
+    state: 'on'
+  action:
+  - service: scene.create
+    data:
+      scene_id: front_door_light_before
+      snapshot_entities:
+      - light.front_door_light
+  - type: turn_on
+    device_id: 111c6f67b5f5588def3e36ac3cf07bcd
+    entity_id: light.front_door_light
+    domain: light
+    brightness_pct: 100
+  - service: notify.alexa_media_master_echo_dot
+    data:
+      message: Front Door Open
+      data:
+        type: announce
+        method: all
+  - service: tts.google_translate_say
+    data:
+      entity_id: media_player.bedroom_speaker
+      message: Front Door Open
+  - wait_for_trigger:
+    - platform: state
+      entity_id: binary_sensor.front_door_sensor
+      from: 'on'
+      to: 'off'
+  - scene: scene.front_door_light_before
+  mode: single
+- id: '1647643078090'
+  alias: Movie Lights
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: input_boolean.movie_lights
+    from: 'off'
+    to: 'on'
+  condition: []
+  action:
+  - service: light.turn_off
+    data: {}
+    target:
+      device_id:
+      - dca3c2b2055bc70aa6ac1bc915003af4
+      - 111c6f67b5f5588def3e36ac3cf07bcd
+      - 196015355b89e4fd07c11f052be69acc
+  - service: switch.turn_off
+    data: {}
+    target:
+      device_id:
+      - fd712bfa6ac747fee7803fd1600c74a6
+      - 4027095f0a14e6b3a9053dcc8b92742e
+      - 5c26178485fa45938ff62baff6029779
+  mode: single
+- id: '1647643595293'
+  alias: 'Sunset '
+  description: ''
+  trigger:
+  - platform: sun
+    event: sunset
+  condition: []
+  action:
+  - service: light.turn_on
+    data: {}
+    target:
+      entity_id: light.balcony_fan_light
+  mode: single
+- id: '1647797969686'
+  alias: Nightly Reminders
+  description: ''
+  trigger:
+  - platform: time
+    at: '19:55:00'
+  condition:
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+    - sat
+  action:
+  - service: script.event_tomorrow
+    data: {}
+  mode: single
+- id: '1648229391066'
+  alias: Clean Kitchen
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: input_button.clean_kitchen
+  condition: []
+  action:
+  - service: vacuum.set_fan_speed
+    data:
+      fan_speed: medium
+    target:
+      entity_id: vacuum.valetudo_vacuum
+  - service: mqtt.publish
+    data:
+      topic: valetudo/Vacuum/MapSegmentationCapability/clean/set
+      payload: '{"segment_ids": ["2"], "iterations": 1, "customOrder": true}'
+  mode: single
+- id: '1648234372729'
+  alias: Clean Dining Room
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: input_button.clean_dining_room
+  condition: []
+  action:
+  - service: vacuum.set_fan_speed
+    data:
+      fan_speed: medium
+    target:
+      entity_id: vacuum.valetudo_vacuum
+  - service: mqtt.publish
+    data:
+      topic: valetudo/Vacuum/MapSegmentationCapability/clean/set
+      payload: '{"segment_ids": ["6"], "iterations": 1, "customOrder": true}'
+  mode: single
+- id: '1648234409561'
+  alias: Clean Living Room
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: input_button.clean_living_room
+  condition: []
+  action:
+  - service: vacuum.set_fan_speed
+    data:
+      fan_speed: high
+    target:
+      entity_id: vacuum.valetudo_vacuum
+  - service: mqtt.publish
+    data:
+      topic: valetudo/Vacuum/MapSegmentationCapability/clean/set
+      payload: '{"segment_ids": ["7"], "iterations": 1, "customOrder": true}'
+  mode: single
+- id: '1648234999258'
+  alias: Clean Hallway
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: input_button.clean_hallway
+  condition: []
+  action:
+  - service: vacuum.set_fan_speed
+    data:
+      fan_speed: medium
+    target:
+      entity_id: vacuum.valetudo_vacuum
+  - service: mqtt.publish
+    data:
+      topic: valetudo/Vacuum/MapSegmentationCapability/clean/set
+      payload: '{"segment_ids": ["5"], "iterations": 1, "customOrder": true}'
+  mode: single
+- id: '1648235033399'
+  alias: Clean Master Bedroom
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: input_button.clean_master_bedroom
+  condition: []
+  action:
+  - service: vacuum.set_fan_speed
+    data:
+      fan_speed: medium
+    target:
+      entity_id: vacuum.valetudo_vacuum
+  - service: mqtt.publish
+    data:
+      topic: valetudo/Vacuum/MapSegmentationCapability/clean/set
+      payload: '{"segment_ids": ["12"], "iterations": 1, "customOrder": true}'
+  mode: single
+- id: '1648235120358'
+  alias: Clean Master Bathroom
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: input_button.clean_master_bathroom
+  condition: []
+  action:
+  - service: vacuum.set_fan_speed
+    data:
+      fan_speed: medium
+    target:
+      entity_id: vacuum.valetudo_vacuum
+  - service: mqtt.publish
+    data:
+      topic: valetudo/Vacuum/MapSegmentationCapability/clean/set
+      payload: '{"segment_ids": ["4"], "iterations": 1, "customOrder": true}'
+  mode: single
+- id: '1648235401254'
+  alias: Clean Second Bedroom
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: input_button.clean_second_bedroom
+  condition: []
+  action:
+  - service: vacuum.set_fan_speed
+    data:
+      fan_speed: medium
+    target:
+      entity_id: vacuum.valetudo_vacuum
+  - service: mqtt.publish
+    data:
+      topic: valetudo/Vacuum/MapSegmentationCapability/clean/set
+      payload: '{"segment_ids": ["13"], "iterations": 1, "customOrder": true}'
+  mode: single
+- id: '1648235418229'
+  alias: Clean Second Bathroom
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: input_button.clean_second_bathroom
+  condition: []
+  action:
+  - service: vacuum.set_fan_speed
+    data:
+      fan_speed: medium
+    target:
+      entity_id: vacuum.valetudo_vacuum
+  - service: mqtt.publish
+    data:
+      topic: valetudo/Vacuum/MapSegmentationCapability/clean/set
+      payload: '{"segment_ids": ["3"], "iterations": 1, "customOrder": true}'
+  mode: single
+- id: '1648235519327'
+  alias: Clean Balcony
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: input_button.clean_balcony
+  condition: []
+  action:
+  - service: vacuum.set_fan_speed
+    data:
+      fan_speed: medium
+    target:
+      entity_id: vacuum.valetudo_vacuum
+  - service: mqtt.publish
+    data:
+      topic: valetudo/Vacuum/MapSegmentationCapability/clean/set
+      payload: '{"segment_ids": ["1"], "iterations": 1, "customOrder": true}'
+  mode: single
+- id: '1648249412028'
+  alias: Master Lights On
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: switch.sink_light_switch_1
+    from: 'off'
+    to: 'on'
+  - platform: state
+    from: 'off'
+    to: 'on'
+    entity_id: light.bed_light
+  condition: []
+  action:
+  - type: turn_on
+    device_id: 3a5b291586350408326808e7c0520276
+    entity_id: switch.sink_light_switch_1
+    domain: switch
+  - type: turn_on
+    device_id: cd45ea3be3b3bf7a13ba1ea19a9afbbe
+    entity_id: light.bed_light
+    domain: light
+  mode: single
+- id: '1648249447238'
+  alias: Master Lights Off
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: switch.sink_light_switch_1
+    from: 'on'
+    to: 'off'
+  - platform: state
+    from: 'on'
+    to: 'off'
+    entity_id: light.bed_light
+  condition: []
+  action:
+  - type: turn_off
+    device_id: 3a5b291586350408326808e7c0520276
+    entity_id: switch.sink_light_switch_1
+    domain: switch
+  - type: turn_off
+    device_id: cd45ea3be3b3bf7a13ba1ea19a9afbbe
+    entity_id: light.bed_light
+    domain: light
+  mode: single
+- id: '1648587274772'
+  alias: 'Dad Phone Ringing '
+  description: ''
+  trigger:
+  - platform: state
+    to: ringing
+    entity_id: sensor.dad_s_phone_phone_state
+  condition: []
+  action:
+  - service: media_player.volume_set
+    data:
+      volume_level: 0.5
+    target:
+      entity_id:
+      - media_player.echo_show
+      - media_player.living_room_echo_dot
+      - media_player.balcony_echo_dot
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: Dad's Phone Is Ringing
+      data:
+        type: announce
+        method: all
+  - service: notify.alexa_media_echo_show
+    data:
+      message: Dad's Phone Is Ringing
+      data:
+        type: announce
+        method: all
+  - service: notify.alexa_media_balcony_echo_dot
+    data:
+      message: Dad's Phone Is Ringing
+      data:
+        type: announce
+        method: all
+  - service: notify.alexa_media_master_echo_dot
+    data:
+      message: Dad's Phone Is Ringing
+      data:
+        type: announce
+        method: all
+  mode: single
+- id: '1648821714482'
+  alias: Mom Phone Reminder
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: binary_sensor.front_door_sensor
+    from: 'off'
+    to: 'on'
+  condition:
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+    before: 07:30:00
+    after: 06:45:00
+  - condition: state
+    entity_id: binary_sensor.mom_s_phone_is_charging
+    state: 'on'
+  action:
+  - service: media_player.volume_set
+    data:
+      volume_level: 0.5
+    target:
+      entity_id: media_player.living_room_echo_dot
+      device_id: 6f50899d4d9562a62ceae95d3e279195
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: You're forgetting your phone
+      data:
+        type: announce
+        method: all
+  mode: single
+- id: '1648943646551'
+  alias: Nightly Reminders Sunday
+  description: ''
+  trigger:
+  - platform: time
+    at: '19:53:00'
+  condition:
+  - condition: time
+    weekday:
+    - sun
+  action:
+  - service: script.event_tomorrow
+    data: {}
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: script.event_tomorrow
+      state: 'True'
+  - service: script.event_this_week
+    data: {}
+  mode: single
+- id: '1649107921413'
+  alias: Balcony Fan Off
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: input_button.balcony_fan_off
+  condition: []
+  action:
+  - service: fan.turn_off
+    data: {}
+    target:
+      entity_id: fan.balcony_fan
+  mode: single
+- id: '1649107990704'
+  alias: Balcony Fan Low
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: input_button.balcony_fan_low
+  condition: []
+  action:
+  - service: fan.turn_on
+    data:
+      percentage: 33.33
+    target:
+      entity_id: fan.balcony_fan
+  mode: single
+- id: '1649108054335'
+  alias: Balcony Fan Medium
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: input_button.balcony_fan_medium
+  condition: []
+  action:
+  - service: fan.turn_on
+    data:
+      percentage: 66.66
+    target:
+      entity_id: fan.balcony_fan
+  mode: single
+- id: '1649108086408'
+  alias: Balcony Fan High
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: input_button.balcony_fan_high
+  condition: []
+  action:
+  - service: fan.turn_on
+    data:
+      percentage: 100
+    target:
+      entity_id: fan.balcony_fan
+  mode: single
+- id: '1649276421709'
+  alias: Balcony Fan Between 60-65
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: weather.home
+    attribute: temperature
+    above: '60'
+    below: '66'
+  condition:
+  - condition: state
+    entity_id: input_boolean.present
+    state: 'on'
+  action:
+  - service: script.fan_idle
+    data: {}
+  mode: single
+- id: '1649286540825'
+  alias: Balcony Fan Below 60
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: weather.home
+    attribute: temperature
+    below: '60'
+  condition:
+  - condition: state
+    entity_id: input_boolean.present
+    state: 'on'
+  action:
+  - service: script.fan_off
+    data: {}
+  mode: single
+- id: '1649951754218'
+  alias: High Pollen Today
+  description: ''
+  trigger:
+  - platform: time
+    at: 04:00:00
+  condition: []
+  action:
+  - condition: numeric_state
+    above: '7'
+    entity_id: sensor.allergy_index_today
+  - service: input_boolean.turn_on
+    data: {}
+    target:
+      entity_id: input_boolean.high_pollen
+  mode: single
+- id: '1649951808030'
+  alias: 'Low Pollen Today '
+  description: ''
+  trigger:
+  - platform: time
+    at: 04:00:00
+  condition: []
+  action:
+  - condition: numeric_state
+    below: '7.5'
+    entity_id: sensor.allergy_index_today
+  - service: input_boolean.turn_off
+    data: {}
+  mode: single
+- id: '1650068257145'
+  alias: Sunrise Blinds Close (Weekend only if sunny)
+  description: ''
+  trigger:
+  - platform: sun
+    event: sunrise
+    offset: '0'
+  condition:
+  - condition: time
+    weekday:
+    - sat
+    - sun
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: weather.home
+      state: sunny
+    - condition: state
+      entity_id: weather.home
+      state: partlycloudy
+  action:
+  - service: script.close_blinds
+    data: {}
+  mode: single
+- id: '1651430908958'
+  alias: Office Light On
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: switch.office_light
+    from: 'off'
+    to: 'on'
+  condition: []
+  action:
+  - service: automation.turn_off
+    data: {}
+    target:
+      entity_id:
+      - automation.lots_of_light_light_sensor
+      - automation.some_light_light_sensor
+      - automation.more_light_light_sensor
+  mode: single
+- id: '1651430949680'
+  alias: Office Light Off
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: switch.office_light
+    from: 'on'
+    to: 'off'
+  condition: []
+  action:
+  - service: automation.turn_on
+    data: {}
+    target:
+      entity_id:
+      - automation.lots_of_light_light_sensor
+      - automation.some_light_light_sensor
+      - automation.more_light_light_sensor
+  mode: single
+- id: '1651754649486'
+  alias: Sun Azimuth Over 90 (Weekend)
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sun.sun
+    above: '90'
+  condition:
+  - condition: sun
+    before: sunset
+    before_offset: '360'
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: weather.home
+      state: sunny
+    - condition: state
+      entity_id: weather.home
+      state: partlycloudy
+  - condition: time
+    weekday:
+    - sat
+    - sun
+  - condition: numeric_state
+    entity_id: sun.sun
+    attribute: elevation
+    above: '0'
+  action:
+  - service: cover.close_cover
+    data: {}
+    target:
+      entity_id: cover.blinds_controller_curtain
+  mode: single
+- id: '1651852446325'
+  alias: Open Left Blinds (Weekend)
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sun.sun
+    attribute: azimuth
+    above: '100'
+  - platform: numeric_state
+    entity_id: sun.sun
+    attribute: elevation
+    above: '85'
+  condition:
+  - condition: state
+    entity_id: input_boolean.present
+    state: 'on'
+  action:
+  - service: script.open_left_blinds
+    data: {}
+  mode: single
+- id: '1651852485995'
+  alias: 'Open Center Blinds (Weekend) '
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sun.sun
+    attribute: azimuth
+    above: '120'
+  - platform: numeric_state
+    entity_id: sun.sun
+    attribute: elevation
+    above: '85'
+  condition:
+  - condition: state
+    entity_id: input_boolean.present
+    state: 'on'
+  action:
+  - service: script.open_center_blinds
+    data: {}
+  mode: single
+- id: '1651852524353'
+  alias: 'Open Right Blinds (Weekend) '
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sun.sun
+    attribute: azimuth
+    above: '150'
+  - platform: numeric_state
+    entity_id: sun.sun
+    attribute: elevation
+    above: '85'
+  condition:
+  - condition: state
+    entity_id: input_boolean.present
+    state: 'on'
+  action:
+  - service: script.open_center_blinds
+    data: {}
+  mode: single
+- id: '1651853055360'
+  alias: Weekend Weather State Change to Sunny
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: weather.home
+    to: sunny
+  - platform: state
+    entity_id: weather.home
+    to: partlycloudy
+  - platform: numeric_state
+    entity_id: sensor.ip_webcam_light_level
+    above: '25'
+  condition: []
+  action:
+  - service: script.auto_close_blinds
+    data: {}
+  mode: single
+- id: '1652100341948'
+  alias: Charge Blinds
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: cover.blinds_controller_curtain
+    to: unavailable
+  - platform: state
+    entity_id: cover.center_blinds_left_curtain
+    to: unavailable
+  - platform: state
+    entity_id: cover.center_blinds_right_curtain
+    to: unavailable
+  - platform: state
+    to: unavailable
+    entity_id: cover.left_blinds_curtain
+  condition: []
+  action:
+  - service: notify.mobile_app_pixel_3
+    data:
+      message: Charge the blinds
+  - service: notify.alexa_media_living_room_echo_dot
+    data:
+      message: The blinds need to charge
+      data:
+        type: announce
+        method: all
+  - service: tts.google_translate_say
+    data:
+      entity_id: media_player.bedroom_speaker
+      message: The blinds need to charge
+  mode: single
+- id: '1652116339497'
+  alias: Open Right Blinds (Weekday)
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sun.sun
+    attribute: azimuth
+    above: '185'
+  - platform: numeric_state
+    entity_id: sun.sun
+    attribute: elevation
+    above: '85'
+  condition:
+  - condition: state
+    entity_id: input_boolean.present
+    state: 'on'
+  - condition: sun
+    before: sunset
+    before_offset: '360'
+  action:
+  - service: script.open_right_blinds
+    data: {}
+  mode: single
+- id: '1652116376615'
+  alias: 'Open Left Blinds (Weekday) '
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sun.sun
+    attribute: azimuth
+    above: '100'
+  - platform: numeric_state
+    entity_id: sun.sun
+    attribute: elevation
+    above: '85'
+  condition:
+  - condition: state
+    entity_id: input_boolean.present
+    state: 'on'
+  - condition: sun
+    before: sunset
+    before_offset: '360'
+  action:
+  - service: script.open_left_blinds
+    data: {}
+  mode: single
+- id: '1652116433977'
+  alias: Open Center Blinds (Weekday)
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sun.sun
+    attribute: azimuth
+    above: '150'
+  - platform: numeric_state
+    entity_id: sun.sun
+    attribute: elevation
+    above: '85'
+  condition:
+  - condition: state
+    entity_id: input_boolean.present
+    state: 'on'
+  - condition: sun
+    before: sunset
+    before_offset: '360'
+  action:
+  - service: script.open_center_blinds
+    data: {}
+  mode: single
+- id: '1652116987710'
+  alias: Sunrise Blinds Close (Weekday)
+  description: ''
+  trigger:
+  - platform: sun
+    event: sunrise
+    offset: '0'
+  condition:
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+  action:
+  - service: script.close_blinds
+    data: {}
+  mode: single
