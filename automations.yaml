@@ -228,17 +228,22 @@
   - condition: state
     entity_id: input_boolean.present
     state: 'off'
-  - condition: not
+  - condition: and
     conditions:
-    - condition: time
-      weekday:
-      - mon
-      - tue
-      - wed
-      - thu
-      - fri
-      after: 09:00:00
-      before: '12:00:00'
+    - condition: not
+      conditions:
+      - condition: time
+        weekday:
+        - mon
+        - tue
+        - wed
+        - thu
+        - fri
+        after: 09:00:00
+        before: '14:00:00'
+    - condition: state
+      entity_id: input_boolean.holiday
+      state: 'off'
   action:
   - service: media_player.volume_set
     data:
@@ -273,8 +278,6 @@
     brightness_pct: 100
   - service: script.auto_blinds
     data: {}
-  - service: script.fan_idle
-    data: {}
   - service: script.auto_thermostat
     data: {}
   - wait_for_trigger:
@@ -298,6 +301,10 @@
     entity_id: input_button.jeremy_movie_lights
   condition: []
   action:
+  - service: automation.turn_off
+    data: {}
+    target:
+      entity_id: automation.bedroom_lights_off
   - type: turn_off
     device_id: fe6f341daeccf1ce8c41f51d1cb17bb0
     entity_id: switch.bedroom_light_switch_1
@@ -307,6 +314,10 @@
     entity_id: light.sconces
     domain: light
     brightness_pct: 40
+  - service: automation.turn_on
+    data: {}
+    target:
+      entity_id: automation.bedroom_lights_off
   mode: single
 - id: '1644378349136'
   alias: Jeremy's Sleeping
@@ -593,11 +604,11 @@
       entity_id: counter.mail_amount
   mode: single
 - id: '1645041031101'
-  alias: 'Good Morning Weekday '
+  alias: Good Morning Weekday (Mom)
   description: ''
   trigger:
   - platform: time
-    at: input_datetime.alarm
+    at: input_datetime.mom_s_alarm
   condition:
   - condition: time
     weekday:
@@ -606,6 +617,9 @@
     - wed
     - thu
     - fri
+  - condition: state
+    entity_id: input_boolean.holiday
+    state: 'off'
   action:
   - service: input_boolean.turn_off
     data: {}
@@ -633,10 +647,8 @@
       milliseconds: 0
   - service: script.auto_thermostat
     data: {}
-  - type: turn_on
-    device_id: e06cd9d5167143aed441bfdad84c2236
-    entity_id: switch.couch_light
-    domain: switch
+  - service: script.auto_lights
+    data: {}
   - service: script.event_today_master
     data: {}
   mode: single
@@ -691,6 +703,9 @@
   - platform: state
     from: 'off'
     entity_id: media_player.fire_tv_192_168_0_166
+  - platform: state
+    entity_id: media_player.fire_tv_192_168_0_166
+    to: idle
   condition: []
   action:
   - service: media_player.select_source
@@ -698,6 +713,7 @@
       source: Cox
     target:
       device_id: 04ed891602f081a5da296429ac0bec39
+      entity_id: media_player.fire_tv_192_168_0_166_2
   - service: media_player.media_play
     data: {}
     target:
@@ -776,21 +792,51 @@
     entity_id: switch.kitchen_light_switch_1
     domain: switch
   condition:
-  - condition: and
+  - condition: or
     conditions:
-    - condition: time
-      after: 03:00:00
-      weekday:
-      - sat
-      - sun
-    - condition: state
-      entity_id: input_boolean.asleep
-      state: 'on'
-    - condition: time
-      before: '12:00:00'
-      weekday:
-      - sat
-      - sun
+    - condition: and
+      conditions:
+      - condition: time
+        after: 03:00:00
+        weekday:
+        - sat
+        - sun
+      - condition: state
+        entity_id: input_boolean.asleep
+        state: 'on'
+      - condition: time
+        before: '12:00:00'
+        weekday:
+        - sat
+        - sun
+    - condition: and
+      conditions:
+      - condition: time
+        after: 03:00:00
+        weekday:
+        - mon
+        - tue
+        - wed
+        - thu
+        - fri
+        - sat
+        - sun
+      - condition: state
+        entity_id: input_boolean.asleep
+        state: 'on'
+      - condition: time
+        before: '12:00:00'
+        weekday:
+        - mon
+        - tue
+        - wed
+        - thu
+        - fri
+        - sat
+        - sun
+      - condition: state
+        entity_id: input_boolean.holiday
+        state: 'on'
   action:
   - service: input_boolean.turn_off
     data: {}
@@ -1108,6 +1154,9 @@
     - wed
     - thu
     - fri
+  - condition: state
+    entity_id: input_boolean.holiday
+    state: 'off'
   action:
   - service: notify.alexa_media_balcony_echo_dot
     data:
@@ -1437,10 +1486,6 @@
       entity_id: input_boolean.asleep
       from: 'off'
       to: 'on'
-  - service: fan.turn_off
-    data: {}
-    target:
-      entity_id: fan.balcony_fan
   - service: light.turn_off
     data: {}
     target:
@@ -1450,7 +1495,7 @@
       - dca3c2b2055bc70aa6ac1bc915003af4
       - 196015355b89e4fd07c11f052be69acc
       - 111c6f67b5f5588def3e36ac3cf07bcd
-      entity_id: light.balcony_fan_light
+      - ad353d019240696152969a2ca3aa7b93
   - service: switch.turn_off
     data: {}
     target:
@@ -1458,6 +1503,7 @@
       - 4027095f0a14e6b3a9053dcc8b92742e
       - fd712bfa6ac747fee7803fd1600c74a6
       - 5c26178485fa45938ff62baff6029779
+      - e06cd9d5167143aed441bfdad84c2236
   - service: script.event_tomorrow
     data: {}
   - service: notify.alexa_media_living_room_echo_dot
@@ -1486,8 +1532,6 @@
     target:
       entity_id: media_player.living_room_echo_dot
   - service: script.event_tomorrow
-    data: {}
-  - service: script.fan_off
     data: {}
   - service: light.turn_off
     data: {}
@@ -1558,37 +1602,14 @@
       entity_id: media_player.bedroom_speaker
       message: Someone's calling for you
   mode: single
-- id: '1647536560902'
-  alias: Gone to Work (Morning)
-  description: ''
-  trigger:
-  - platform: time
-    at: input_datetime.mom_s_alarm
-  condition:
-  - condition: time
-    weekday:
-    - mon
-    - tue
-    - wed
-    - thu
-    - fri
-  action:
-  - delay:
-      hours: 1
-      minutes: 30
-      seconds: 0
-      milliseconds: 0
-  - service: input_boolean.turn_off
-    data: {}
-    target:
-      entity_id: input_boolean.present
-  mode: single
 - id: '1647536692928'
   alias: Dad Home (Lunch)
   description: ''
   trigger:
-  - platform: time
-    at: '12:00:00'
+  - platform: state
+    entity_id: binary_sensor.front_door_sensor
+    from: 'off'
+    to: 'on'
   condition:
   - condition: time
     weekday:
@@ -1597,19 +1618,15 @@
     - wed
     - thu
     - fri
+    before: '13:50:00'
+    after: '12:00:00'
   - condition: state
     state: 'off'
     entity_id: input_boolean.present
+  - condition: state
+    entity_id: input_boolean.holiday
+    state: 'off'
   action:
-  - service: automation.turn_off
-    data: {}
-    target:
-      entity_id: automation.welcome_home_2
-  - wait_for_trigger:
-    - platform: state
-      from: 'off'
-      to: 'on'
-      entity_id: binary_sensor.front_door_sensor
   - service: input_boolean.turn_on
     data: {}
     target:
@@ -1622,6 +1639,7 @@
     entity_id: weather.home
     attribute: temperature
     above: '50'
+    below: '95'
   - service: script.auto_blinds
     data: {}
   - service: automation.trigger
@@ -1644,11 +1662,8 @@
       minutes: 1
       seconds: 0
       milliseconds: 0
-  - service: androidtv.adb_command
-    data:
-      command: CENTER
-    target:
-      device_id: 04ed891602f081a5da296429ac0bec39
+  - service: script.auto_thermostat
+    data: {}
   - service: automation.turn_on
     data: {}
     target:
@@ -1668,8 +1683,6 @@
     to: 'off'
   condition: []
   action:
-  - service: script.fan_off
-    data: {}
   - service: light.turn_off
     data: {}
     target:
@@ -1712,6 +1725,8 @@
     data: {}
   - service: script.clean_main
     data: {}
+  - service: script.clean_dinner
+    data: {}
   mode: single
 - id: '1647539716731'
   alias: Calendar Notification for Tomorrow
@@ -1745,6 +1760,9 @@
     - wed
     - thu
     - fri
+  - condition: state
+    entity_id: input_boolean.holiday
+    state: 'off'
   action:
   - service: input_boolean.turn_off
     data: {}
@@ -1899,10 +1917,13 @@
     event: sunset
   condition: []
   action:
-  - service: light.turn_on
+  - service: automation.turn_on
     data: {}
     target:
-      entity_id: light.balcony_fan_light
+      entity_id:
+      - automation.some_light_light_sensor
+      - automation.more_light_light_sensor
+      - automation.lots_of_light_light_sensor
   mode: single
 - id: '1647797969686'
   alias: Nightly Reminders
@@ -2065,7 +2086,7 @@
   - service: mqtt.publish
     data:
       topic: valetudo/Vacuum/MapSegmentationCapability/clean/set
-      payload: '{"segment_ids": ["3"], "iterations": 1, "customOrder": true}'
+      payload: '{"segment_ids": ["3"], "iterations": 2, "customOrder": true}'
   mode: single
 - id: '1648235519327'
   alias: Clean Balcony
@@ -2189,11 +2210,14 @@
     - wed
     - thu
     - fri
-    before: 07:30:00
-    after: 06:45:00
+    before: 06:30:00
+    after: 04:00:00
   - condition: state
     entity_id: binary_sensor.mom_s_phone_is_charging
     state: 'on'
+  - condition: state
+    entity_id: input_boolean.holiday
+    state: 'off'
   action:
   - service: media_player.volume_set
     data:
@@ -2229,100 +2253,12 @@
   - service: script.event_this_week
     data: {}
   mode: single
-- id: '1649107921413'
-  alias: Balcony Fan Off
-  description: ''
-  trigger:
-  - platform: state
-    entity_id: input_button.balcony_fan_off
-  condition: []
-  action:
-  - service: fan.turn_off
-    data: {}
-    target:
-      entity_id: fan.balcony_fan
-  mode: single
-- id: '1649107990704'
-  alias: Balcony Fan Low
-  description: ''
-  trigger:
-  - platform: state
-    entity_id: input_button.balcony_fan_low
-  condition: []
-  action:
-  - service: fan.turn_on
-    data:
-      percentage: 33.33
-    target:
-      entity_id: fan.balcony_fan
-  mode: single
-- id: '1649108054335'
-  alias: Balcony Fan Medium
-  description: ''
-  trigger:
-  - platform: state
-    entity_id: input_button.balcony_fan_medium
-  condition: []
-  action:
-  - service: fan.turn_on
-    data:
-      percentage: 66.66
-    target:
-      entity_id: fan.balcony_fan
-  mode: single
-- id: '1649108086408'
-  alias: Balcony Fan High
-  description: ''
-  trigger:
-  - platform: state
-    entity_id: input_button.balcony_fan_high
-  condition: []
-  action:
-  - service: fan.turn_on
-    data:
-      percentage: 100
-    target:
-      entity_id: fan.balcony_fan
-  mode: single
-- id: '1649276421709'
-  alias: Balcony Fan Between 60-65
-  description: ''
-  trigger:
-  - platform: numeric_state
-    entity_id: weather.home
-    attribute: temperature
-    above: '60'
-    below: '66'
-  condition:
-  - condition: state
-    entity_id: input_boolean.present
-    state: 'on'
-  action:
-  - service: script.fan_idle
-    data: {}
-  mode: single
-- id: '1649286540825'
-  alias: Balcony Fan Below 60
-  description: ''
-  trigger:
-  - platform: numeric_state
-    entity_id: weather.home
-    attribute: temperature
-    below: '60'
-  condition:
-  - condition: state
-    entity_id: input_boolean.present
-    state: 'on'
-  action:
-  - service: script.fan_off
-    data: {}
-  mode: single
 - id: '1649951754218'
   alias: High Pollen Today
   description: ''
   trigger:
   - platform: time
-    at: 04:00:00
+    at: 03:00:00
   condition: []
   action:
   - condition: numeric_state
@@ -2338,14 +2274,16 @@
   description: ''
   trigger:
   - platform: time
-    at: 04:00:00
+    at: 03:00:00
   condition: []
   action:
   - condition: numeric_state
-    below: '7.5'
+    below: '7'
     entity_id: sensor.allergy_index_today
   - service: input_boolean.turn_off
     data: {}
+    target:
+      entity_id: input_boolean.high_pollen
   mode: single
 - id: '1650068257145'
   alias: Sunrise Blinds Close (Weekend only if sunny)
@@ -2354,21 +2292,27 @@
   - platform: sun
     event: sunrise
     offset: '0'
+  - platform: state
+    entity_id: weather.home
+    from: sunny
+  - platform: state
+    entity_id: weather.home
+    from: partlycloudy
   condition:
-  - condition: time
-    weekday:
-    - sat
-    - sun
   - condition: or
     conditions:
+    - condition: time
+      weekday:
+      - sat
+      - sun
     - condition: state
-      entity_id: weather.home
-      state: sunny
-    - condition: state
-      entity_id: weather.home
-      state: partlycloudy
+      entity_id: input_boolean.holiday
+      state: 'on'
+  - condition: state
+    entity_id: input_boolean.present
+    state: 'on'
   action:
-  - service: script.close_blinds
+  - service: script.auto_close_blinds
     data: {}
   mode: single
 - id: '1651430908958'
@@ -2376,9 +2320,9 @@
   description: ''
   trigger:
   - platform: state
-    entity_id: switch.office_light
     from: 'off'
     to: 'on'
+    entity_id: switch.office_light
   condition: []
   action:
   - service: automation.turn_off
@@ -2456,6 +2400,15 @@
   - condition: state
     entity_id: input_boolean.present
     state: 'on'
+  - condition: or
+    conditions:
+    - condition: time
+      weekday:
+      - sat
+      - sun
+    - condition: state
+      entity_id: input_boolean.holiday
+      state: 'on'
   action:
   - service: script.open_left_blinds
     data: {}
@@ -2467,7 +2420,7 @@
   - platform: numeric_state
     entity_id: sun.sun
     attribute: azimuth
-    above: '120'
+    above: '160'
   - platform: numeric_state
     entity_id: sun.sun
     attribute: elevation
@@ -2476,6 +2429,15 @@
   - condition: state
     entity_id: input_boolean.present
     state: 'on'
+  - condition: or
+    conditions:
+    - condition: time
+      weekday:
+      - sat
+      - sun
+    - condition: state
+      entity_id: input_boolean.holiday
+      state: 'on'
   action:
   - service: script.open_center_blinds
     data: {}
@@ -2487,7 +2449,7 @@
   - platform: numeric_state
     entity_id: sun.sun
     attribute: azimuth
-    above: '150'
+    above: '185'
   - platform: numeric_state
     entity_id: sun.sun
     attribute: elevation
@@ -2496,8 +2458,17 @@
   - condition: state
     entity_id: input_boolean.present
     state: 'on'
+  - condition: or
+    conditions:
+    - condition: time
+      weekday:
+      - sat
+      - sun
+    - condition: state
+      entity_id: input_boolean.holiday
+      state: 'on'
   action:
-  - service: script.open_center_blinds
+  - service: script.open_right_blinds
     data: {}
   mode: single
 - id: '1651853055360'
@@ -2513,7 +2484,11 @@
   - platform: numeric_state
     entity_id: sensor.ip_webcam_light_level
     above: '25'
-  condition: []
+  condition:
+  - condition: time
+    weekday:
+    - sat
+    - sun
   action:
   - service: script.auto_close_blinds
     data: {}
@@ -2525,6 +2500,10 @@
   - platform: state
     entity_id: cover.blinds_controller_curtain
     to: unavailable
+    for:
+      hours: 0
+      minutes: 5
+      seconds: 0
   - platform: state
     entity_id: cover.center_blinds_left_curtain
     to: unavailable
@@ -2566,9 +2545,16 @@
   - condition: state
     entity_id: input_boolean.present
     state: 'on'
-  - condition: sun
-    before: sunset
-    before_offset: '360'
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+  - condition: state
+    entity_id: input_boolean.holiday
+    state: 'off'
   action:
   - service: script.open_right_blinds
     data: {}
@@ -2589,9 +2575,16 @@
   - condition: state
     entity_id: input_boolean.present
     state: 'on'
-  - condition: sun
-    before: sunset
-    before_offset: '360'
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+  - condition: state
+    entity_id: input_boolean.holiday
+    state: 'off'
   action:
   - service: script.open_left_blinds
     data: {}
@@ -2612,9 +2605,16 @@
   - condition: state
     entity_id: input_boolean.present
     state: 'on'
-  - condition: sun
-    before: sunset
-    before_offset: '360'
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+  - condition: state
+    entity_id: input_boolean.holiday
+    state: 'off'
   action:
   - service: script.open_center_blinds
     data: {}
@@ -2634,7 +2634,458 @@
     - wed
     - thu
     - fri
+  - condition: state
+    entity_id: input_boolean.holiday
+    state: 'off'
   action:
   - service: script.close_blinds
     data: {}
+  mode: single
+- id: '1652199839495'
+  alias: Kitty Motion Sensor
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.ip_webcam_motion
+    below: '1000'
+    above: '8'
+  condition:
+  - condition: state
+    entity_id: switch.second_bathroom_light_switch_1
+    state: 'off'
+  action:
+  - service: input_boolean.turn_on
+    data: {}
+    target:
+      entity_id: input_boolean.kitty_litter_dirty
+  - type: turn_on
+    device_id: 0ee5424557e8f148cb4fa5374d104ce2
+    entity_id: switch.second_bathroom_fan_switch_1
+    domain: switch
+  - service: tts.google_translate_say
+    data:
+      entity_id: media_player.bedroom_speaker
+      message: Kitty is pooping
+  - delay:
+      hours: 0
+      minutes: 15
+      seconds: 0
+      milliseconds: 0
+  - type: turn_off
+    device_id: 0ee5424557e8f148cb4fa5374d104ce2
+    entity_id: switch.second_bathroom_fan_switch_1
+    domain: switch
+  mode: single
+- id: '1652199990547'
+  alias: Clean Kitty Litter
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: switch.second_bathroom_light_switch_1
+    to: 'on'
+  condition:
+  - condition: state
+    entity_id: input_boolean.kitty_litter_dirty
+    state: 'on'
+  action:
+  - service: tts.google_translate_say
+    data:
+      entity_id: media_player.second_bathroom_speaker
+      message: The litter box needs to clean
+  - service: input_boolean.turn_off
+    data: {}
+    target:
+      entity_id: input_boolean.kitty_litter_dirty
+  mode: single
+- id: '1652646705255'
+  alias: Morning Weekday Clean
+  description: ''
+  trigger:
+  - platform: time
+    at: 08:30:00
+  condition:
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+  - condition: state
+    entity_id: input_boolean.holiday
+    state: 'off'
+  action:
+  - service: script.clean_main
+    data: {}
+  mode: single
+- id: '1652736141143'
+  alias: Balcony Light On
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: input_button.balcony_light
+  condition: []
+  action:
+  - service: light.turn_on
+    data: {}
+    target:
+      entity_id: light.balcony_fan
+  mode: single
+- id: '1652736201602'
+  alias: Balcony Light Off
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: input_button.balcony_light_off
+  condition: []
+  action:
+  - service: light.turn_off
+    data: {}
+    target:
+      entity_id: light.balcony_fan
+  mode: single
+- id: '1653184773783'
+  alias: Good Morning Weekday  (Dad)
+  description: ''
+  trigger:
+  - platform: time
+    at: input_datetime.alarm
+  condition:
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+  - condition: state
+    entity_id: input_boolean.holiday
+    state: 'off'
+  action:
+  - service: media_player.volume_set
+    data:
+      volume_level: 0.5
+    target:
+      entity_id:
+      - media_player.master_echo_dot
+  - repeat:
+      count: '5'
+      sequence:
+      - service: media_player.play_media
+        target:
+          entity_id: media_player.master_echo_dot
+        data:
+          media_content_type: sound
+          media_content_id: amzn_sfx_church_bell_1x_02
+  - delay:
+      hours: 1
+      minutes: 30
+      seconds: 0
+      milliseconds: 0
+  - service: input_boolean.turn_off
+    data: {}
+    target:
+      entity_id: input_boolean.present
+  mode: single
+- id: '1653498371924'
+  alias: Clean the vacuum
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: input_number.vacuum_runs
+    above: '10'
+  condition: []
+  action:
+  - device_id: 121efe9aaea9b0bc327b1636ccb2ff93
+    domain: mobile_app
+    type: notify
+    message: The vacuum needs to empty
+  - service: tts.google_translate_say
+    data:
+      entity_id: media_player.bedroom_speaker
+      message: The vacuum needs to empty
+  mode: single
+- id: '1653753705560'
+  alias: Jeremy Bathroom Fan
+  description: ''
+  trigger:
+  - platform: device
+    type: changed_states
+    device_id: 0ee5424557e8f148cb4fa5374d104ce2
+    entity_id: switch.second_bathroom_fan_switch_1
+    domain: switch
+    for:
+      hours: 0
+      minutes: 5
+      seconds: 0
+  condition: []
+  action:
+  - wait_for_trigger:
+    - platform: state
+      entity_id: switch.second_bathroom_light_switch_1
+      to: 'off'
+  - delay:
+      hours: 0
+      minutes: 15
+      seconds: 0
+      milliseconds: 0
+  - service: switch.turn_off
+    data: {}
+    target:
+      entity_id: switch.second_bathroom_fan_switch_1
+  mode: single
+- id: '1653872506565'
+  alias: Holiday
+  description: ''
+  trigger:
+  - platform: time
+    at: 00:01:00
+  condition:
+  - condition: state
+    entity_id: calendar.holidays_in_united_states
+    state: 'on'
+  action:
+  - service: input_boolean.turn_on
+    data: {}
+    target:
+      entity_id: input_boolean.holiday
+  mode: single
+- id: '1653872534526'
+  alias: Not Holiday
+  description: ''
+  trigger:
+  - platform: time
+    at: 00:01:00
+  condition:
+  - condition: state
+    entity_id: calendar.holidays_in_united_states
+    state: 'off'
+  action:
+  - service: input_boolean.turn_off
+    data: {}
+    target:
+      entity_id: input_boolean.holiday
+  mode: single
+- id: '1654379197139'
+  alias: Center Blinds Open Both
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: cover.center_blinds_left_curtain
+    from: closed
+  - platform: state
+    entity_id: cover.center_blinds_right_curtain
+    from: closed
+  condition:
+  - condition: not
+    conditions:
+    - condition: state
+      state: 'unavailable '
+      entity_id: cover.center_blinds_left_curtain
+  - condition: not
+    conditions:
+    - condition: state
+      state: 'unavailable '
+      entity_id: cover.center_blinds_right_curtain
+  action:
+  - service: cover.open_cover
+    data: {}
+    target:
+      entity_id:
+      - cover.center_blinds_left_curtain
+      - cover.center_blinds_right_curtain
+  mode: single
+- id: '1654379239961'
+  alias: Center Blinds Close Both
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: cover.center_blinds_left_curtain
+    from: open
+  - platform: state
+    entity_id: cover.center_blinds_right_curtain
+    from: open
+  condition:
+  - condition: not
+    conditions:
+    - condition: state
+      state: 'unavailable '
+      entity_id: cover.center_blinds_left_curtain
+  - condition: not
+    conditions:
+    - condition: state
+      state: 'unavailable '
+      entity_id: cover.center_blinds_right_curtain
+  action:
+  - service: cover.close_cover
+    data: {}
+    target:
+      entity_id:
+      - cover.center_blinds_right_curtain
+      - cover.center_blinds_left_curtain
+  mode: single
+- id: '1654391607217'
+  alias: Balcony Fan Off
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.balcony_temp
+    below: '60'
+  - platform: state
+    entity_id: input_button.balcony_fan_off
+  condition: []
+  action:
+  - service: fan.turn_off
+    data: {}
+    target:
+      entity_id: fan.balcony_fan
+  mode: single
+- id: '1654391652055'
+  alias: Balcony Fan Low
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.balcony_temp
+    above: '60'
+    below: '70'
+  - platform: state
+    entity_id: input_button.balcony_fan_low
+  condition: []
+  action:
+  - service: fan.turn_on
+    data:
+      percentage: 33
+    target:
+      entity_id: fan.balcony_fan
+  mode: single
+- id: '1654391676435'
+  alias: Balcony Fan Medium
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.balcony_temp
+    above: '70'
+    below: '85'
+  - platform: state
+    entity_id: input_button.balcony_fan_medium
+  condition: []
+  action:
+  - service: fan.turn_on
+    data:
+      percentage: 66
+    target:
+      entity_id: fan.balcony_fan
+  mode: single
+- id: '1654391704392'
+  alias: Balcony Fan High
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.balcony_temp
+    above: '85'
+  - platform: state
+    entity_id: input_button.balcony_fan_high
+  condition: []
+  action:
+  - service: fan.turn_on
+    data:
+      percentage: 100
+    target:
+      entity_id: fan.balcony_fan
+  mode: single
+- id: '1654457972474'
+  alias: Kitchen Fan On
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.kitchen_temp
+    above: '85'
+  condition:
+  - condition: state
+    entity_id: input_boolean.asleep
+    state: 'off'
+  action:
+  - service: switch.turn_on
+    data: {}
+    target:
+      entity_id: switch.kitchen_fan
+  mode: single
+- id: '1654457990769'
+  alias: Kitchen Fan Off
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.kitchen_temp
+    below: '85'
+  condition: []
+  action:
+  - service: switch.turn_off
+    data: {}
+    target:
+      entity_id: switch.kitchen_fan
+  mode: single
+- id: '1654477293715'
+  alias: 'Night Keep Cool '
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.average_inside_temp
+    above: '75'
+  condition:
+  - condition: state
+    entity_id: input_boolean.asleep
+    state: 'on'
+  - condition: numeric_state
+    entity_id: input_number.night_temp
+    above: '50'
+  action:
+  - device_id: 639ccaf341593b7b43a0f82a72fd7905
+    domain: climate
+    entity_id: climate.thermostat
+    type: set_hvac_mode
+    hvac_mode: cool
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 10
+      milliseconds: 0
+  - service: climate.set_temperature
+    data:
+      temperature: 65
+    target:
+      entity_id: climate.thermostat
+  - wait_for_trigger:
+    - platform: numeric_state
+      entity_id: sensor.average_inside_temp
+      below: '74'
+  - service: climate.set_hvac_mode
+    data:
+      hvac_mode: heat_cool
+    target:
+      entity_id: climate.thermostat
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 10
+      milliseconds: 0
+  - service: climate.set_temperature
+    data:
+      target_temp_high: 72
+      target_temp_low: 65
+  mode: single
+- id: '1654520611013'
+  alias: Balcony Fan Reconnected
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: fan.balcony_fan
+    from: unavailable
+  condition: []
+  action:
+  - service: script.auto_fan
+    data: {}
+  - service: tts.google_translate_say
+    data:
+      entity_id: media_player.bedroom_speaker
+      message: The balcony fan reconnected
   mode: single

@@ -34,11 +34,36 @@ alexa_media:
 sensor:
   - platform: opensky
     radius: 5
-# Thermostat
+# Thermostat Goal
   - platform: template
     sensors:
       goal_temp:
         value_template: '{{ state_attr("climate.thermostat","temperature")|int }}'
+# Dining Temp
+  - platform: template
+    sensors:
+      dining_temp:
+        value_template: '{{ state_attr("climate.thermostat","current_temperature")|int }}'
+# Average Temp
+  - platform: template
+    sensors:
+      average_temp:
+        value_template: "{{ ((float(states('sensor.kitchen_temp')) + float(states('sensor.balcony_temp')) + float(states('sensor.dining_temp'))) / 3) | round(2) }}"
+# Average Inside Temp
+  - platform: template
+    sensors:
+      average_inside_temp:
+        value_template: "{{ ((float(states('sensor.kitchen_temp')) + float(states('sensor.dining_temp'))) / 2) | round(2) }}"
+# Thermostat Low
+  - platform: template
+    sensors:
+      low_temp:
+        value_template: '{{ state_attr("climate.thermostat","target_temp_low")|int }}'
+# Thermostat High
+  - platform: template
+    sensors:
+      high_temp:
+        value_template: '{{ state_attr("climate.thermostat","target_temp_high")|int }}'     
 # Temperature
   - platform: template
     sensors:
@@ -100,6 +125,34 @@ sensor:
                states.calendar.building4unit906_gmail_com.attributes.start_time,
                '%Y-%m-%d %H:%M:%S') %}
           {{ e.strftime('%j')|int - now().strftime('%j')|int <= 7 }}
+#Time
+  - platform: time_date
+    display_options:
+      - 'time'
+      - 'date'
+# 12 Hour time
+  - platform: template
+    sensors:
+      timenew:
+        friendly_name: 'XTime'
+        value_template: >
+          {% set time = states('sensor.time') %}
+          {% set hour = time[:2]|int %}
+          {{ '{:2d}:{} {}'.format(hour if hour == 12 else hour % 12, time[3:5], '' if hour>11 else '') }}
+
+# Day
+  - platform: template
+    sensors:
+      day:
+        friendly_name: 'Day'
+        value_template: "{{ as_timestamp(states('sensor.date')) | timestamp_custom('%A') }}"
+
+# Month
+  - platform: template
+    sensors:
+      month:
+        friendly_name: 'month'
+        value_template: "{{ as_timestamp(states('sensor.date')) | timestamp_custom('%B %d') }}"
           
 # TP-Link Router
 #  - platform: tplink_router
@@ -146,48 +199,95 @@ android_ip_webcam:
   - host: !secret ip
     port: 8080
     sensors:
-      - audio_connections
-      - battery_level
-      - battery_temp
-      - battery_voltage
       - light
-      - motion
-      - pressure
-      - proximity
-      - sound
-      - video_connections
-    switches:
-      - motion_detect
+      
+# Kitty Litter Webcam
+
+#  - host: !secret ip2
+#    port: 8080
+#    sensors:
+#      - audio_connections
+#      - battery_level
+#      - battery_temp
+#      - battery_voltage
+#      - light
+#      - motion
+#      - pressure
+#      - proximity
+#      - sound
+#      - video_connections
+#    switches:
+#      - motion_detect
+
 
 # Balcony Fan Light
-fan:
-    - platform: mqtt
-      name: "Balcony Fan"
-      command_topic: "cmnd/Balcony_Fan/FanSpeed"
-      state_topic: "stat/Balcony_Fan/RESULT"
-      state_value_template: >
-        {% if value_json.FanSpeed > 0 -%}1{% else -%}0{%- endif %}
-      payload_off: "0"
-      payload_on: "1"
-      percentage_command_topic: "cmnd/Balcony_Fan/FanSpeed"
-      percentage_state_topic: "stat/Balcony_Fan/RESULT"
-      percentage_value_template: "{{ value_json.FanSpeed }}"
-      speed_range_min:  1
-      speed_range_max: 3
-      availability_topic: tele/Balcony_Fan/LWT
-      payload_available: Online
-      payload_not_available: Offline
-light:
-    - platform: mqtt
-      name: "Balcony Fan Light"
-      command_topic: "cmnd/Balcony_Fan/power1"
-      state_topic: "stat/Balcony_Fan/POWER1"
-      qos: 1
-      payload_on: "ON"
-      payload_off: "OFF"
-      retain: false
+#fan:
+#    - platform: mqtt
+#      name: "Balcony Fan"
+#      command_topic: "cmnd/Balcony_Fan/FanSpeed"
+#      state_topic: "stat/Balcony_Fan/RESULT"
+#      state_value_template: >
+#        {% if value_json.FanSpeed > 0 -%}1{% else -%}0{%- endif %}
+#      payload_off: "0"
+#      payload_on: "1"
+#      percentage_command_topic: "cmnd/Balcony_Fan/FanSpeed"
+#      percentage_state_topic: "stat/Balcony_Fan/RESULT"
+#      percentage_value_template: "{{ value_json.FanSpeed }}"
+#      speed_range_min:  1
+#      speed_range_max: 3
+#      availability_topic: tele/Balcony_Fan/LWT
+#      payload_available: Online
+#      payload_not_available: Offline
+#light:
+#    - platform: mqtt
+#      name: "Balcony Fan Light"
+#      command_topic: "cmnd/Balcony_Fan/power1"
+#      state_topic: "stat/Balcony_Fan/POWER1"
+#      qos: 1
+#      payload_on: "ON"
+#      payload_off: "OFF"
+#      retain: false
 
+#fan:
+#  - platform: mqtt
+#    name: "Balcony Fan"
+#    command_topic: "cmnd/iFan03-2/FanSpeed"
+#    state_topic: "stat/iFan03-2/RESULT"
+#    state_value_template: >
+#      {% if value_json.FanSpeed is defined %}
+#        {% if value_json.FanSpeed == 0 -%}off{%- elif value_json.FanSpeed > 0 -%}on{%- endif %}
+#      {% else %}
+#        {% if states.fan.balcony_fan.state == 'off' -%}off{%- elif states.fan.balcony_fan.state == 'on' -%}on{%- endif %}
+#      {% endif %}
+#    availability_topic: tele/iFan03-2/LWT
+#    payload_off: "off"
+#    payload_on: "on"
+#    payload_available: Online
+#    payload_not_available: Offline
+#    percentage_command_template: >
+#      {% if value == 33 %}
+#        1
+#      {% elif value == 66 %}
+#        2
+#      {% elif value == 100 %}
+#        3
+#      {% else %}
+#        0 
+#      {% endif %}
+#    percentage_command_topic: "cmnd/iFan03-2/FanSpeed"
+#    percentage_state_topic: "stat/iFan03-2/RESULT"
+#    percentage_value_template: >
+#      {% if value_json.FanSpeed == 1 %}
+#        33
+#      {% elif value_json.FanSpeed == 2 %}
+#        66
+#      {% elif value_json.FanSpeed == 3 %}
+#        100
+#      {% else %}
+#        0 
+#      {% endif %}
 
+# Time
 
 
 

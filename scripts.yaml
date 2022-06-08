@@ -124,6 +124,14 @@ event_tomorrow:
       data:
         type: announce
         method: all
+  - service: notify.alexa_media_master_echo_dot
+    data:
+      message: Don't forget, tomorrow '{{states.calendar.building4unit906_gmail_com.attributes.message}}'
+        at '{{as_timestamp (states.calendar.building4unit906_gmail_com.attributes.start_time
+        ) | timestamp_custom('%-I %-M %p') }} '
+      data:
+        type: announce
+        method: all
   mode: single
   alias: Event Tomorrow
 mail_in_mailbox:
@@ -240,8 +248,6 @@ some_light:
       entity_id: sensor.ip_webcam_light_level
       above: '12'
       below: '22'
-    - condition: sun
-      after: sunrise
   - type: turn_on
     device_id: 111c6f67b5f5588def3e36ac3cf07bcd
     entity_id: light.front_door_light
@@ -264,8 +270,6 @@ no_light:
     - condition: numeric_state
       entity_id: sensor.ip_webcam_light_level
       below: '13'
-    - condition: sun
-      after: sunrise
   - service: light.turn_on
     data:
       brightness_pct: 65
@@ -294,8 +298,6 @@ more_light:
       entity_id: sensor.ip_webcam_light_level
       above: '21'
       below: '26'
-    - condition: sun
-      after: sunrise
   - type: turn_on
     device_id: 111c6f67b5f5588def3e36ac3cf07bcd
     entity_id: light.front_door_light
@@ -318,8 +320,6 @@ lots_of_light:
     - condition: numeric_state
       entity_id: sensor.ip_webcam_light_level
       above: '25'
-    - condition: sun
-      after: sunrise
   - type: turn_off
     device_id: 111c6f67b5f5588def3e36ac3cf07bcd
     entity_id: light.front_door_light
@@ -575,14 +575,13 @@ hot_night:
       milliseconds: 0
   - service: climate.set_temperature
     data:
-      temperature: 70
+      temperature: 65
     target:
       entity_id: climate.thermostat
   - wait_for_trigger:
     - platform: numeric_state
-      entity_id: climate.thermostat
-      attribute: current_temperature
-      below: '71'
+      entity_id: sensor.average_inside_temp
+      below: '73'
   - service: climate.set_hvac_mode
     data:
       hvac_mode: heat_cool
@@ -624,7 +623,9 @@ clean_main:
     - condition: not
       conditions:
       - condition: time
-        before: '17:00:00'
+        before: '16:00:00'
+  - condition: time
+    after: 08:00:00
   - service: automation.trigger
     data: {}
     target:
@@ -653,33 +654,11 @@ clean_main:
     data: {}
     target:
       entity_id: automation.clean_living_hallway
-  mode: single
-fan_off:
-  alias: Fan Off
-  sequence:
-  - condition: not
-    conditions:
-    - condition: state
-      entity_id: fan.balcony_fan
-      state: unavailable
-  - service: fan.turn_off
+  - service: input_number.increment
     data: {}
     target:
-      entity_id: fan.balcony_fan
+      entity_id: input_number.vacuum_runs
   mode: single
-fan_idle:
-  sequence:
-  - condition: numeric_state
-    entity_id: weather.home
-    attribute: temperature
-    above: '60'
-  - service: fan.turn_on
-    data:
-      percentage: 1
-    target:
-      entity_id: fan.balcony_fan
-  mode: single
-  alias: Fan Idle
 its_nice_outside_high_pollen:
   alias: It's Nice Outside High Pollen
   sequence:
@@ -753,6 +732,18 @@ open_right_blinds:
       entity_id: sun.sun
       attribute: azimuth
       above: '185'
+    - condition: and
+      conditions:
+      - condition: not
+        conditions:
+        - condition: state
+          entity_id: weather.home
+          state: sunny
+      - condition: not
+        conditions:
+        - condition: state
+          entity_id: weather.home
+          state: partlycloudy
   - condition: sun
     before: sunset
     before_offset: '360'
@@ -777,6 +768,9 @@ auto_blinds:
   alias: Auto Open Blinds
 close_blinds:
   sequence:
+  - condition: sun
+    before: sunset
+    before_offset: -06:00:00
   - service: cover.close_cover
     data: {}
     target:
@@ -799,7 +793,19 @@ open_center_blinds:
     - condition: numeric_state
       entity_id: sun.sun
       attribute: azimuth
-      above: '150'
+      above: '155'
+    - condition: and
+      conditions:
+      - condition: not
+        conditions:
+        - condition: state
+          entity_id: weather.home
+          state: sunny
+      - condition: not
+        conditions:
+        - condition: state
+          entity_id: weather.home
+          state: partlycloudy
   - condition: sun
     before: sunset
     before_offset: '360'
@@ -823,6 +829,18 @@ open_left_blinds:
       entity_id: sun.sun
       attribute: azimuth
       above: '100'
+    - condition: and
+      conditions:
+      - condition: not
+        conditions:
+        - condition: state
+          entity_id: weather.home
+          state: sunny
+      - condition: not
+        conditions:
+        - condition: state
+          entity_id: weather.home
+          state: partlycloudy
   - condition: sun
     before: sunset
     before_offset: '360'
@@ -847,11 +865,27 @@ clean_dinner:
     - condition: not
       conditions:
       - condition: time
-        after: '17:00:00'
+        after: '16:00:00'
+        weekday:
+        - mon
+        - tue
+        - wed
+        - thu
+        - fri
+        - sat
+        - sun
   - service: automation.trigger
     data: {}
     target:
-      entity_id: automation.clean_dining_room
+      entity_id: automation.clean_living_hallway
+  - wait_for_trigger:
+    - platform: state
+      entity_id: vacuum.valetudo_vacuum
+      to: returning
+  - service: automation.trigger
+    data: {}
+    target:
+      entity_id: automation.clean_living_master_bedroom
   - wait_for_trigger:
     - platform: state
       entity_id: vacuum.valetudo_vacuum
@@ -867,71 +901,11 @@ clean_dinner:
   - service: automation.trigger
     data: {}
     target:
-      entity_id: automation.clean_living_hallway
-  mode: single
-close_left_blinds:
-  alias: Close Left Blinds (Weekend)
-  sequence:
-  - condition: and
-    conditions:
-    - condition: numeric_state
-      entity_id: sun.sun
-      attribute: elevation
-      below: '85'
-    - condition: numeric_state
-      entity_id: sun.sun
-      attribute: azimuth
-      below: '100'
-    - condition: not
-      conditions:
-      - condition: state
-        entity_id: weather.home
-        state: sunny
-    - condition: not
-      conditions:
-      - condition: state
-        entity_id: weather.home
-        state: partlycloudy
-    - condition: sun
-      before: sunset
-      before_offset: '360'
-  - service: cover.close_cover
+      entity_id: automation.clean_dining_room
+  - service: input_number.increment
     data: {}
     target:
-      entity_id: cover.left_blinds_curtain
-  mode: single
-close_center_blinds:
-  alias: Close Center Blinds (Weekend)
-  sequence:
-  - condition: and
-    conditions:
-    - condition: numeric_state
-      entity_id: sun.sun
-      attribute: elevation
-      below: '85'
-    - condition: numeric_state
-      entity_id: sun.sun
-      attribute: azimuth
-      below: '120'
-    - condition: not
-      conditions:
-      - condition: state
-        entity_id: weather.home
-        state: sunny
-    - condition: not
-      conditions:
-      - condition: state
-        entity_id: weather.home
-        state: partlycloudy
-    - condition: sun
-      before: sunset
-      before_offset: '360'
-  - service: cover.close_cover
-    data: {}
-    target:
-      entity_id:
-      - cover.center_blinds_left_curtain
-      - cover.center_blinds_right_curtain
+      entity_id: input_number.vacuum_runs
   mode: single
 close_right_blinds:
   alias: Close Right Blinds (Weekend)
@@ -947,6 +921,16 @@ close_right_blinds:
   - condition: sun
     before: sunset
     before_offset: '360'
+  - condition: and
+    conditions:
+    - condition: numeric_state
+      entity_id: sun.sun
+      attribute: elevation
+      below: '85'
+    - condition: numeric_state
+      entity_id: sun.sun
+      attribute: azimuth
+      below: '185'
   - service: cover.close_cover
     data: {}
     target:
@@ -955,10 +939,141 @@ close_right_blinds:
 auto_close_blinds:
   alias: Auto Close Blinds
   sequence:
-  - service: script.close_left_blinds
+  - service: script.close_left_blinds_weekend
     data: {}
-  - service: script.close_center_blinds
+  - service: script.close_center_blinds_weekend
     data: {}
   - service: script.close_right_blinds
+    data: {}
+  mode: single
+close_left_blinds_weekend:
+  alias: 'Close Left Blinds (Weekend) '
+  sequence:
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: weather.home
+      state: sunny
+    - condition: state
+      entity_id: weather.home
+      state: partlycloudy
+  - condition: sun
+    before: sunset
+    before_offset: '360'
+  - condition: and
+    conditions:
+    - condition: numeric_state
+      entity_id: sun.sun
+      attribute: elevation
+      below: '85'
+    - condition: numeric_state
+      entity_id: sun.sun
+      attribute: azimuth
+      below: '100'
+  - service: cover.close_cover
+    data: {}
+    target:
+      entity_id: cover.left_blinds_curtain
+  mode: single
+close_center_blinds_weekend:
+  alias: 'Close Center Blinds (Weekend) '
+  sequence:
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: weather.home
+      state: sunny
+    - condition: state
+      entity_id: weather.home
+      state: partlycloudy
+  - condition: sun
+    before: sunset
+    before_offset: '360'
+  - condition: and
+    conditions:
+    - condition: numeric_state
+      entity_id: sun.sun
+      attribute: elevation
+      below: '85'
+    - condition: numeric_state
+      entity_id: sun.sun
+      attribute: azimuth
+      below: '150'
+  - service: cover.close_cover
+    data: {}
+    target:
+      entity_id:
+      - cover.center_blinds_left_curtain
+      - cover.center_blinds_right_curtain
+  mode: single
+center_blind_control:
+  alias: Center Blind Control
+  sequence:
+  - service: cover.toggle
+    data: {}
+    target:
+      entity_id:
+      - cover.center_blinds_left_curtain
+      - cover.center_blinds_right_curtain
+  mode: single
+fan_off:
+  alias: Balcony Fan Off
+  sequence:
+  - condition: numeric_state
+    entity_id: sensor.balcony_temp
+    below: '60'
+  - service: fan.turn_off
+    data: {}
+    target:
+      entity_id: fan.balcony_fan
+  mode: single
+fan_low:
+  alias: Balcony Fan Low
+  sequence:
+  - condition: numeric_state
+    entity_id: sensor.balcony_temp
+    above: '60'
+    below: '70'
+  - service: fan.turn_on
+    data:
+      percentage: 33
+    target:
+      entity_id: fan.balcony_fan
+  mode: single
+fan_medium:
+  alias: Balcony Fan Medium
+  sequence:
+  - condition: numeric_state
+    entity_id: sensor.balcony_temp
+    above: '70'
+    below: '85'
+  - service: fan.turn_on
+    data:
+      percentage: 66
+    target:
+      entity_id: fan.balcony_fan
+  mode: single
+balcony_fan_high:
+  alias: Balcony Fan High
+  sequence:
+  - condition: numeric_state
+    entity_id: sensor.balcony_temp
+    above: '85'
+  - service: fan.turn_on
+    data:
+      percentage: 100
+    target:
+      entity_id: fan.balcony_fan
+  mode: single
+auto_fan:
+  alias: Auto Fan
+  sequence:
+  - service: script.fan_off
+    data: {}
+  - service: script.fan_low
+    data: {}
+  - service: script.fan_medium
+    data: {}
+  - service: script.balcony_fan_high
     data: {}
   mode: single
