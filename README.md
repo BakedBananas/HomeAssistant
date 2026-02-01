@@ -2,7 +2,7 @@
 
 ## Summary of my setup 
 
-### [Video Demo](https://github.com/BakedBananas/HomeAssistant/blob/master/PXL_20220525_134711428.mp4)
+### [Video Demo](https://youtu.be/CsDpAXuNNw0?si=90Mj5RRBUC5_fS92)
 
 When you enter the condo, a motion sensor hidden by the door triggers a Welcome automation which sets the thermostat according to the temperature outside, it opens the blinds, it auto sets the lights using a light sensor from my old phone, and of course Alexa says "Welcome". 
 
